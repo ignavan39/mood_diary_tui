@@ -2,9 +2,9 @@ package tui
 
 import (
 	"context"
-	"mood-diary/internal/application/usecase"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ignavan39/mood-diary/internal/application/usecase"
 )
 
 type Screen int
@@ -54,6 +54,8 @@ func (m *Model) Init() tea.Cmd {
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -66,17 +68,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentScreen == ScreenMenu {
 				return m, tea.Quit
 			}
+
 			m.currentScreen = ScreenMenu
 			return m, nil
 		}
 
 	case NavigateMsg:
+		oldScreen := m.currentScreen
 		m.currentScreen = msg.Screen
-		return m, nil
 
-	case ErrorMsg:
-		m.err = msg.Error
-		return m, nil
+		if oldScreen != msg.Screen {
+			cmd := m.initCurrentScreen()
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+
 	}
 
 	var cmd tea.Cmd
@@ -107,7 +114,36 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.editModel = editModel.(*EditModel)
 	}
 
-	return m, cmd
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	if len(cmds) > 0 {
+		return m, tea.Batch(cmds...)
+	}
+	return m, nil
+}
+
+func (m *Model) initCurrentScreen() tea.Cmd {
+	switch m.currentScreen {
+	case ScreenMenu:
+		return m.menuModel.Init()
+	case ScreenRecord:
+
+		m.recordModel = NewRecordModel(m.service)
+		return m.recordModel.Init()
+	case ScreenStats:
+
+		m.statsModel = NewStatsModel(m.service)
+		return m.statsModel.Init()
+	case ScreenHistory:
+
+		m.historyModel = NewHistoryModel(m.service)
+		return m.historyModel.Init()
+	case ScreenEdit:
+		return m.editModel.Init()
+	}
+	return nil
 }
 
 func (m *Model) View() string {

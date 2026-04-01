@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"mood-diary/internal/domain/entity"
-	"mood-diary/internal/domain/repository"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/domain/repository"
 )
 
 var (
@@ -218,6 +218,7 @@ func (r *SQLiteMoodRepository) FindAll(ctx context.Context) ([]*entity.MoodEntry
 }
 
 func (r *SQLiteMoodRepository) GetStatistics(ctx context.Context, start, end time.Time) (*repository.MoodStatistics, error) {
+
 	query := `
 		SELECT 
 			COUNT(*) as total,
@@ -283,6 +284,7 @@ func (r *SQLiteMoodRepository) GetStatistics(ctx context.Context, start, end tim
 }
 
 func (r *SQLiteMoodRepository) calculateTrend(ctx context.Context, start, end time.Time) float64 {
+
 	query := `
 		SELECT level, date
 		FROM mood_entries
@@ -322,7 +324,6 @@ func (r *SQLiteMoodRepository) scanMoodEntry(idStr, dateStr string, level int, n
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse UUID: %w", err)
 	}
-
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse date: %w", err)

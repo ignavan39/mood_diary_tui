@@ -1,10 +1,9 @@
 package tui
 
 import (
-	"mood-diary/internal/application/usecase"
-
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ignavan39/mood-diary/internal/application/usecase"
 )
 
 type EditModel struct {
@@ -14,6 +13,7 @@ type EditModel struct {
 
 func NewEditModel(service *usecase.MoodService) *EditModel {
 	ti := textinput.New()
+	ti.Placeholder = "Заметка..."
 
 	return &EditModel{
 		service:   service,
@@ -26,6 +26,7 @@ func (m *EditModel) Init() tea.Cmd {
 }
 
 func (m *EditModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {

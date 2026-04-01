@@ -3,15 +3,15 @@ package tui
 import (
 	"context"
 	"fmt"
-	"mood-diary/internal/application/usecase"
-	"mood-diary/internal/domain/entity"
-	"mood-diary/internal/presentation/styles"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/application/usecase"
+	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type RecordModel struct {
@@ -70,9 +70,11 @@ func (m *RecordModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				m.step = 2
 				m.noteInput.Blur()
+				return m, nil
 			case "esc":
 				m.step = 0
 				m.noteInput.Blur()
+				return m, nil
 			default:
 				m.noteInput, cmd = m.noteInput.Update(msg)
 				return m, cmd
@@ -80,25 +82,33 @@ func (m *RecordModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case 2:
 			switch msg.String() {
-			case "y", "enter":
+			case "y", "Y", "enter":
+				m.step = 3
 				return m, m.saveMood()
-			case "n", "esc":
+			case "n", "N", "esc":
 				m.step = 0
+				return m, nil
 			}
 		}
 
 	case SavedMsg:
 		m.success = true
 		m.errorMsg = ""
-		return m, tea.Sequence(
-			tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
-				return Navigate(ScreenMenu)
+
+		return m, tea.Batch(
+			tea.Tick(1500*time.Millisecond, func(t time.Time) tea.Msg {
+				return NavigateMsg{Screen: ScreenMenu}
 			}),
 		)
 
 	case ErrorMsg:
 		m.errorMsg = msg.Error.Error()
+		m.success = false
 		m.step = 0
+		return m, nil
+
+	default:
+
 	}
 
 	return m, nil
@@ -125,7 +135,9 @@ func (m *RecordModel) View() string {
 	if m.success {
 		success := styles.SuccessStyle.Render("✓ Настроение успешно записано!")
 		b.WriteString(success)
-		return b.String()
+		b.WriteString("\n\n")
+		b.WriteString(styles.HelpStyle.Render("Возврат в меню..."))
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if m.errorMsg != "" {
@@ -172,6 +184,11 @@ func (m *RecordModel) View() string {
 
 		moodLevel, _ := entity.NewMoodLevel(m.moodLevel)
 
+		note := m.noteInput.Value()
+		if note == "" {
+			note = "(без заметки)"
+		}
+
 		box := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(styles.GetMoodColor(m.moodLevel)).
@@ -181,7 +198,7 @@ func (m *RecordModel) View() string {
 				moodLevel.Emoji(),
 				moodLevel.String(),
 				m.moodLevel,
-				m.noteInput.Value(),
+				note,
 				time.Now().Format("02.01.2006"),
 			))
 
@@ -190,6 +207,10 @@ func (m *RecordModel) View() string {
 
 		help := styles.HelpStyle.Render("y/Enter: Сохранить • n/Esc: Отмена")
 		b.WriteString(help)
+	}
+
+	if m.step == 3 {
+		b.WriteString(styles.InfoStyle.Render("Сохранение..."))
 	}
 
 	return lipgloss.NewStyle().
@@ -205,6 +226,7 @@ func (m *RecordModel) renderMoodScale() string {
 		emoji := moodLevel.Emoji()
 
 		if i == m.moodLevel {
+
 			scale += lipgloss.NewStyle().
 				Foreground(styles.TextLight).
 				Background(styles.GetMoodColor(i)).
@@ -212,6 +234,7 @@ func (m *RecordModel) renderMoodScale() string {
 				Padding(0, 1).
 				Render(emoji)
 		} else {
+
 			scale += lipgloss.NewStyle().
 				Foreground(styles.GetMoodColor(i)).
 				Padding(0, 1).

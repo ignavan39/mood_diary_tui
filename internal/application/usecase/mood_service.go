@@ -3,10 +3,11 @@ package usecase
 import (
 	"context"
 	"errors"
-	"mood-diary/internal/domain/entity"
-	"mood-diary/internal/domain/repository"
-	persistence "mood-diary/internal/infrastructure/persistence/repository"
 	"time"
+
+	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/domain/repository"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/persistence"
 )
 
 var (
@@ -23,6 +24,7 @@ func NewMoodService(repo repository.MoodRepository) *MoodService {
 }
 
 func (s *MoodService) RecordMood(ctx context.Context, level int, note string, date *time.Time) error {
+
 	moodLevel, err := entity.NewMoodLevel(level)
 	if err != nil {
 		return err
@@ -51,6 +53,7 @@ func (s *MoodService) RecordMood(ctx context.Context, level int, note string, da
 }
 
 func (s *MoodService) UpdateMood(ctx context.Context, date time.Time, level int, note string) error {
+
 	moodLevel, err := entity.NewMoodLevel(level)
 	if err != nil {
 		return err
@@ -157,7 +160,7 @@ func (p Period) String() string {
 	case PeriodMonth:
 		return "Месяц"
 	case PeriodQuarter:
-		return "3 месяца"
+		return "Квартал"
 	case PeriodYear:
 		return "Год"
 	case PeriodAll:

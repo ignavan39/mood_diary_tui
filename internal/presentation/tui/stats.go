@@ -3,17 +3,16 @@ package tui
 import (
 	"context"
 	"fmt"
-	"mood-diary/internal/application/usecase"
-	"mood-diary/internal/domain/entity"
-	"mood-diary/internal/domain/repository"
-	"mood-diary/internal/presentation/styles"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/application/usecase"
+	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/domain/repository"
+	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
-// StatsModel represents the statistics screen
 type StatsModel struct {
 	service  *usecase.MoodService
 	period   usecase.Period
@@ -77,6 +76,9 @@ func (m *StatsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ErrorMsg:
 		m.errorMsg = msg.Error.Error()
 		m.loading = false
+
+	default:
+
 	}
 
 	return m, nil
@@ -104,11 +106,9 @@ func (m *StatsModel) loadStats() tea.Cmd {
 	}
 }
 
-// View renders the statistics screen
 func (m *StatsModel) View() string {
 	var b strings.Builder
 
-	// Header
 	header := styles.HeaderStyle.Render("📊 Статистика настроений")
 	b.WriteString(header)
 	b.WriteString("\n\n")
@@ -119,7 +119,6 @@ func (m *StatsModel) View() string {
 		b.WriteString("\n\n")
 	}
 
-	// Period selector
 	b.WriteString(m.renderPeriodSelector())
 	b.WriteString("\n\n")
 
@@ -136,19 +135,15 @@ func (m *StatsModel) View() string {
 		return b.String()
 	}
 
-	// Statistics cards
 	b.WriteString(m.renderStatsCards())
 	b.WriteString("\n\n")
 
-	// Mood distribution chart
 	b.WriteString(m.renderMoodDistribution())
 	b.WriteString("\n\n")
 
-	// Recent trend
 	b.WriteString(m.renderRecentTrend())
 	b.WriteString("\n\n")
 
-	// Help
 	help := styles.HelpStyle.Render("←/→: Изменить период • r: Обновить • Esc: Назад")
 	b.WriteString(help)
 
@@ -157,7 +152,6 @@ func (m *StatsModel) View() string {
 		Render(b.String())
 }
 
-// renderPeriodSelector renders the period selection bar
 func (m *StatsModel) renderPeriodSelector() string {
 	var items []string
 
@@ -173,7 +167,6 @@ func (m *StatsModel) renderPeriodSelector() string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, items...)
 }
 
-// renderStatsCards renders statistics overview cards
 func (m *StatsModel) renderStatsCards() string {
 	if m.stats == nil {
 		return ""
@@ -185,7 +178,6 @@ func (m *StatsModel) renderStatsCards() string {
 		styles.PastelSky,
 	)
 
-	// Average mood card
 	avgMood := m.stats.AverageMood
 	avgEmoji := ""
 	if m.stats.TotalEntries > 0 {

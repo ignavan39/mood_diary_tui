@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"mood-diary/internal/application/usecase"
-	"mood-diary/internal/infrastructure/database"
-	persistence "mood-diary/internal/infrastructure/persistence/repository"
-	"mood-diary/internal/presentation/tui"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ignavan39/mood-diary/internal/application/usecase"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/database"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/persistence"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui"
 )
 
 func main() {
+
 	dbPath, err := database.GetDefaultDBPath()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting database path: %v\n", err)

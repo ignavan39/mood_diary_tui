@@ -2,11 +2,11 @@ package tui
 
 import (
 	"fmt"
-	"mood-diary/internal/presentation/styles"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type MenuModel struct {
@@ -50,6 +50,9 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
+
+	default:
+
 	}
 	return m, nil
 }

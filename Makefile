@@ -111,11 +111,12 @@ uninstall:
 		echo "  Выполните: sudo make uninstall"; \
 	fi
 
+db-clean:
 	@echo "$(BLUE)Очистка базы данных...$(NC)"
 	rm -f ~/.mood-diary/*.db*
 	@echo "$(GREEN)✓ База данных очищена$(NC)"
 
-all: clean deps build test
+all:
 	@echo "$(GREEN)✓ Полная сборка завершена$(NC)"
 
 dev: fmt vet run

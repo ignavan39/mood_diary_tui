@@ -3,13 +3,13 @@ package tui
 import (
 	"context"
 	"fmt"
-	"mood-diary/internal/application/usecase"
-	"mood-diary/internal/domain/entity"
-	"mood-diary/internal/presentation/styles"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/application/usecase"
+	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type HistoryModel struct {
@@ -46,6 +46,7 @@ func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter", " ":
 			if len(m.entries) > 0 {
+
 				return m, Navigate(ScreenEdit)
 			}
 		case "r":
@@ -62,6 +63,9 @@ func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ErrorMsg:
 		m.errorMsg = msg.Error.Error()
 		m.loading = false
+
+	default:
+
 	}
 
 	return m, nil
@@ -127,6 +131,7 @@ func (m *HistoryModel) renderEntries() string {
 		"Дата",
 		"",
 		"Настроение",
+		"Заметка",
 	)
 	b.WriteString(headerStyle.Render(header))
 	b.WriteString("\n")
@@ -147,6 +152,7 @@ func (m *HistoryModel) renderEntries() string {
 }
 
 func (m *HistoryModel) renderEntry(entry *entity.MoodEntry, selected bool) string {
+
 	dateStr := entry.Date.Format("02.01.2006")
 
 	emoji := entry.Level.Emoji()
