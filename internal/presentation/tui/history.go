@@ -1,0 +1,186 @@
+package tui
+
+import (
+	"context"
+	"fmt"
+	"mood-diary/internal/application/usecase"
+	"mood-diary/internal/domain/entity"
+	"mood-diary/internal/presentation/styles"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+type HistoryModel struct {
+	service  *usecase.MoodService
+	entries  []*entity.MoodEntry
+	cursor   int
+	loading  bool
+	errorMsg string
+}
+
+func NewHistoryModel(service *usecase.MoodService) *HistoryModel {
+	return &HistoryModel{
+		service: service,
+		cursor:  0,
+		loading: true,
+	}
+}
+
+func (m *HistoryModel) Init() tea.Cmd {
+	return m.loadHistory()
+}
+
+func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			if m.cursor < len(m.entries)-1 {
+				m.cursor++
+			}
+		case "enter", " ":
+			if len(m.entries) > 0 {
+				return m, Navigate(ScreenEdit)
+			}
+		case "r":
+			return m, m.loadHistory()
+		case "esc", "q":
+			return m, Navigate(ScreenMenu)
+		}
+
+	case HistoryLoadedMsg:
+		m.entries = msg.Entries
+		m.loading = false
+		m.errorMsg = ""
+
+	case ErrorMsg:
+		m.errorMsg = msg.Error.Error()
+		m.loading = false
+	}
+
+	return m, nil
+}
+
+func (m *HistoryModel) loadHistory() tea.Cmd {
+	m.loading = true
+	return func() tea.Msg {
+		ctx := context.Background()
+		entries, err := m.service.GetRecentMoods(ctx, 30)
+		if err != nil {
+			return ErrorMsg{Error: err}
+		}
+		return HistoryLoadedMsg{Entries: entries}
+	}
+}
+
+func (m *HistoryModel) View() string {
+	var b strings.Builder
+
+	header := styles.HeaderStyle.Render("📅 История записей")
+	b.WriteString(header)
+	b.WriteString("\n\n")
+
+	if m.errorMsg != "" {
+		errMsg := styles.ErrorStyle.Render("✗ Ошибка: " + m.errorMsg)
+		b.WriteString(errMsg)
+		b.WriteString("\n\n")
+	}
+
+	if m.loading {
+		b.WriteString(styles.InfoStyle.Render("Загрузка..."))
+		return b.String()
+	}
+
+	if len(m.entries) == 0 {
+		b.WriteString(styles.InfoStyle.Render("Нет записей"))
+		b.WriteString("\n\n")
+		help := styles.HelpStyle.Render("r: Обновить • Esc: Назад")
+		b.WriteString(help)
+		return b.String()
+	}
+
+	b.WriteString(m.renderEntries())
+	b.WriteString("\n\n")
+
+	help := styles.HelpStyle.Render("↑/↓: Навигация • Enter: Редактировать • r: Обновить • Esc: Назад")
+	b.WriteString(help)
+
+	return lipgloss.NewStyle().
+		Padding(2, 4).
+		Render(b.String())
+}
+
+func (m *HistoryModel) renderEntries() string {
+	var b strings.Builder
+
+	headerStyle := lipgloss.NewStyle().
+		Foreground(styles.PastelLavender).
+		Bold(true)
+
+	header := fmt.Sprintf("%-12s  %-4s  %-15s  %-30s",
+		"Дата",
+		"",
+		"Настроение",
+	)
+	b.WriteString(headerStyle.Render(header))
+	b.WriteString("\n")
+
+	separator := strings.Repeat("─", 70)
+	b.WriteString(lipgloss.NewStyle().
+		Foreground(styles.PastelGray).
+		Render(separator))
+	b.WriteString("\n")
+
+	for i, entry := range m.entries {
+		line := m.renderEntry(entry, i == m.cursor)
+		b.WriteString(line)
+		b.WriteString("\n")
+	}
+
+	return b.String()
+}
+
+func (m *HistoryModel) renderEntry(entry *entity.MoodEntry, selected bool) string {
+	dateStr := entry.Date.Format("02.01.2006")
+
+	emoji := entry.Level.Emoji()
+	moodText := fmt.Sprintf("%s %2d/10", emoji, entry.Level.Int())
+
+	note := entry.Note
+	maxNoteLen := 30
+	if len(note) > maxNoteLen {
+		note = note[:maxNoteLen-3] + "..."
+	}
+	if note == "" {
+		note = lipgloss.NewStyle().
+			Foreground(styles.TextMuted).
+			Italic(true).
+			Render("(без заметки)")
+	}
+
+	line := fmt.Sprintf("%-12s  %-4s  %-15s  %-30s",
+		dateStr,
+		emoji,
+		moodText,
+		note,
+	)
+
+	if selected {
+		return styles.SelectedListItemStyle.Render("→ " + line)
+	}
+
+	color := styles.GetMoodColor(entry.Level.Int())
+	return lipgloss.NewStyle().
+		Foreground(color).
+		Render("  " + line)
+}
+
+type HistoryLoadedMsg struct {
+	Entries []*entity.MoodEntry
+}
