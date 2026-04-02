@@ -280,7 +280,7 @@ func (m *StatsModel) renderRecentTrend() string {
 
 	var b strings.Builder
 
-	b.WriteString(styles.SubtitleStyle.Render("Динамика"))
+	b.WriteString(styles.SubtitleStyle.Render("Динамика настроения"))
 	b.WriteString("\n\n")
 
 	limit := 14
@@ -298,16 +298,40 @@ func (m *StatsModel) renderRecentTrend() string {
 		values[i] = float64(entry.Level.Int())
 	}
 
+	var sum float64
+	minVal, maxVal := values[0], values[0]
+	for _, v := range values {
+		sum += v
+		if v < minVal {
+			minVal = v
+		}
+		if v > maxVal {
+			maxVal = v
+		}
+	}
+	avg := sum / float64(len(values))
+
+	scaleStyle := lipgloss.NewStyle().Foreground(styles.TextMuted)
+	b.WriteString(scaleStyle.Render("10 │"))
+	b.WriteString("\n")
+	b.WriteString(scaleStyle.Render(" 5 │"))
+	b.WriteString("\n")
+	b.WriteString(scaleStyle.Render(" 0 │"))
+	b.WriteString("\n   └")
+
 	sparkline := styles.Sparkline(values, len(values))
 	b.WriteString(sparkline)
 	b.WriteString("\n")
 
 	if len(entries) > 0 {
-		dateRange := fmt.Sprintf("%s — %s",
+		info := fmt.Sprintf("%s — %s  │  Мин: %.0f  Сред: %.1f  Макс: %.0f",
 			entries[0].Date.Format("02.01"),
 			entries[len(entries)-1].Date.Format("02.01"),
+			minVal,
+			avg,
+			maxVal,
 		)
-		b.WriteString(styles.HelpStyle.Render(dateRange))
+		b.WriteString(styles.HelpStyle.Render(info))
 	}
 
 	return b.String()

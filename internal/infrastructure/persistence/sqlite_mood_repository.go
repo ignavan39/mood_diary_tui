@@ -324,9 +324,22 @@ func (r *SQLiteMoodRepository) scanMoodEntry(idStr, dateStr string, level int, n
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse UUID: %w", err)
 	}
-	date, err := time.Parse("2006-01-02", dateStr)
+
+	var date time.Time
+
+	date, err = time.Parse("2006-01-02", dateStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse date: %w", err)
+
+		date, err = time.Parse(time.RFC3339, dateStr)
+		if err != nil {
+
+			if len(dateStr) >= 10 {
+				date, err = time.Parse("2006-01-02", dateStr[:10])
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse date %q: %w", dateStr, err)
+			}
+		}
 	}
 
 	moodLevel, err := entity.NewMoodLevel(level)

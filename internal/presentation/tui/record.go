@@ -15,12 +15,14 @@ import (
 )
 
 type RecordModel struct {
-	service   *usecase.MoodService
-	moodLevel int
-	noteInput textinput.Model
-	step      int
-	success   bool
-	errorMsg  string
+	service       *usecase.MoodService
+	moodLevel     int
+	noteInput     textinput.Model
+	step          int
+	existingEntry *entity.MoodEntry
+	isUpdate      bool
+	success       bool
+	errorMsg      string
 }
 
 func NewRecordModel(service *usecase.MoodService) *RecordModel {
@@ -38,13 +40,32 @@ func NewRecordModel(service *usecase.MoodService) *RecordModel {
 }
 
 func (m *RecordModel) Init() tea.Cmd {
-	return nil
+	return m.checkExistingEntry()
+}
+
+func (m *RecordModel) checkExistingEntry() tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		entry, err := m.service.GetTodayMood(ctx)
+		if err == nil && entry != nil {
+			return ExistingEntryMsg{Entry: entry}
+		}
+		return nil
+	}
 }
 
 func (m *RecordModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case ExistingEntryMsg:
+
+		m.existingEntry = msg.Entry
+		m.isUpdate = true
+		m.moodLevel = msg.Entry.Level.Int()
+		m.noteInput.SetValue(msg.Entry.Note)
+		return m, nil
+
 	case tea.KeyMsg:
 		switch m.step {
 		case 0:
@@ -117,7 +138,16 @@ func (m *RecordModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RecordModel) saveMood() tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
-		err := m.service.RecordMood(ctx, m.moodLevel, m.noteInput.Value(), nil)
+
+		var err error
+		if m.isUpdate {
+
+			err = m.service.UpdateMood(ctx, time.Now(), m.moodLevel, m.noteInput.Value())
+		} else {
+
+			err = m.service.RecordMood(ctx, m.moodLevel, m.noteInput.Value(), nil)
+		}
+
 		if err != nil {
 			return ErrorMsg{Error: err}
 		}
@@ -128,12 +158,26 @@ func (m *RecordModel) saveMood() tea.Cmd {
 func (m *RecordModel) View() string {
 	var b strings.Builder
 
-	header := styles.HeaderStyle.Render("📝 Записать настроение")
+	headerText := "📝 Записать настроение"
+	if m.isUpdate {
+		headerText = "✏️ Изменить настроение"
+	}
+	header := styles.HeaderStyle.Render(headerText)
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
+	if m.isUpdate && m.step == 0 {
+		info := styles.InfoStyle.Render("ℹ️  Запись за сегодня уже существует. Вы можете её изменить.")
+		b.WriteString(info)
+		b.WriteString("\n\n")
+	}
+
 	if m.success {
-		success := styles.SuccessStyle.Render("✓ Настроение успешно записано!")
+		successText := "✓ Настроение успешно записано!"
+		if m.isUpdate {
+			successText = "✓ Настроение успешно обновлено!"
+		}
+		success := styles.SuccessStyle.Render(successText)
 		b.WriteString(success)
 		b.WriteString("\n\n")
 		b.WriteString(styles.HelpStyle.Render("Возврат в меню..."))
@@ -179,7 +223,11 @@ func (m *RecordModel) View() string {
 	}
 
 	if m.step == 2 {
-		b.WriteString(styles.SubtitleStyle.Render("Подтвердите запись:"))
+		confirmText := "Подтвердите запись:"
+		if m.isUpdate {
+			confirmText = "Подтвердите изменение:"
+		}
+		b.WriteString(styles.SubtitleStyle.Render(confirmText))
 		b.WriteString("\n\n")
 
 		moodLevel, _ := entity.NewMoodLevel(m.moodLevel)
@@ -219,7 +267,7 @@ func (m *RecordModel) View() string {
 }
 
 func (m *RecordModel) renderMoodScale() string {
-	scale := ""
+	var parts []string
 
 	for i := 0; i <= 10; i++ {
 		moodLevel, _ := entity.NewMoodLevel(i)
@@ -227,22 +275,31 @@ func (m *RecordModel) renderMoodScale() string {
 
 		if i == m.moodLevel {
 
-			scale += lipgloss.NewStyle().
+			selected := lipgloss.NewStyle().
 				Foreground(styles.TextLight).
 				Background(styles.GetMoodColor(i)).
-				Bold(true).
+				Border(lipgloss.ThickBorder()).
+				BorderForeground(lipgloss.Color("#4A4A4A")).
 				Padding(0, 1).
+				Bold(false).
 				Render(emoji)
+			parts = append(parts, selected)
 		} else {
 
-			scale += lipgloss.NewStyle().
+			unselected := lipgloss.NewStyle().
 				Foreground(styles.GetMoodColor(i)).
+				Faint(true).
 				Padding(0, 1).
 				Render(emoji)
+			parts = append(parts, unselected)
 		}
 	}
 
-	return scale
+	return lipgloss.JoinHorizontal(lipgloss.Left, parts...)
+}
+
+type ExistingEntryMsg struct {
+	Entry *entity.MoodEntry
 }
 
 type SavedMsg struct{}
