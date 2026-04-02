@@ -8,13 +8,16 @@
 ---
 
 <a id="-english"></a>
-# 🌙 Mood Diary TUI
+# Mood Diary TUI
 ![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/Platform-Linux-orange.svg)
 
 
 Beautiful terminal mood tracker with interactive TUI interface. Track your emotions, analyze trends, and take care of your mental health.
+
+![main](./.assets/main.png)
+
 
 ## ✨ Features
 
@@ -354,7 +357,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 ---
 
 <a id="-russian"></a>
-# 🌙 Дневник Настроения TUI
+# Дневник Настроения TUI
 
 ![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
@@ -363,6 +366,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 
 Красивый терминальный дневник настроения с интерактивным интерфейсом. Отслеживайте свои эмоции, анализируйте тренды и заботьтесь о своём ментальном здоровье.
+
+![main](./.assets/main.png)
 
 ## ✨ Возможности
 
