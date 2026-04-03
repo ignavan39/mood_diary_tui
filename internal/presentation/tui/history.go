@@ -32,6 +32,13 @@ func (m *HistoryModel) Init() tea.Cmd {
 	return m.loadHistory()
 }
 
+func (m *HistoryModel) GetSelectedEntry() *entity.MoodEntry {
+	if m.cursor >= 0 && m.cursor < len(m.entries) {
+		return m.entries[m.cursor]
+	}
+	return nil
+}
+
 func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -44,10 +51,10 @@ func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.entries)-1 {
 				m.cursor++
 			}
-		case "enter", " ":
-			if len(m.entries) > 0 {
+		case "enter", " ", "e":
+			if len(m.entries) > 0 && m.cursor < len(m.entries) {
 
-				return m, Navigate(ScreenEdit)
+				return m, NavigateToEdit(m.entries[m.cursor])
 			}
 		case "r":
 			return m, m.loadHistory()
@@ -59,6 +66,13 @@ func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.entries = msg.Entries
 		m.loading = false
 		m.errorMsg = ""
+
+		if m.cursor >= len(m.entries) {
+			m.cursor = len(m.entries) - 1
+		}
+		if m.cursor < 0 && len(m.entries) > 0 {
+			m.cursor = 0
+		}
 
 	case ErrorMsg:
 		m.errorMsg = msg.Error.Error()
@@ -98,7 +112,7 @@ func (m *HistoryModel) View() string {
 
 	if m.loading {
 		b.WriteString(styles.InfoStyle.Render("Загрузка..."))
-		return b.String()
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if len(m.entries) == 0 {
@@ -106,13 +120,13 @@ func (m *HistoryModel) View() string {
 		b.WriteString("\n\n")
 		help := styles.HelpStyle.Render("r: Обновить • Esc: Назад")
 		b.WriteString(help)
-		return b.String()
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	b.WriteString(m.renderEntries())
 	b.WriteString("\n\n")
 
-	help := styles.HelpStyle.Render("↑/↓: Навигация • Enter: Редактировать • r: Обновить • Esc: Назад")
+	help := styles.HelpStyle.Render("↑/↓: Навигация • Enter/e: Редактировать • r: Обновить • Esc: Назад")
 	b.WriteString(help)
 
 	return lipgloss.NewStyle().
@@ -189,4 +203,14 @@ func (m *HistoryModel) renderEntry(entry *entity.MoodEntry, selected bool) strin
 
 type HistoryLoadedMsg struct {
 	Entries []*entity.MoodEntry
+}
+
+type NavigateToEditMsg struct {
+	Entry *entity.MoodEntry
+}
+
+func NavigateToEdit(entry *entity.MoodEntry) tea.Cmd {
+	return func() tea.Msg {
+		return NavigateToEditMsg{Entry: entry}
+	}
 }

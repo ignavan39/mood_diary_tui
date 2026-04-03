@@ -189,7 +189,7 @@ func ProgressBar(value, max int, width int) string {
 		Render(bar)
 }
 
-func Sparkline(values []float64, width int) string {
+func Sparkline(values []float64) string {
 	if len(values) == 0 {
 		return lipgloss.NewStyle().
 			Foreground(TextMuted).
@@ -206,7 +206,7 @@ func Sparkline(values []float64, width int) string {
 		}
 	}
 
-	blocks := "▁▂▃▄▅▆▇█"
+	blocks := []rune("▁▂▃▄▅▆▇█")
 	result := ""
 
 	for _, v := range values {
@@ -221,17 +221,12 @@ func Sparkline(values []float64, width int) string {
 				index = 7
 			}
 
-			level := int(v)
-			color := GetMoodColor(level)
-
-			styledBlock := lipgloss.NewStyle().
-				Foreground(color).
-				Bold(true).
-				Render(string(blocks[index]))
-
-			result += styledBlock
+			result += string(blocks[index])
 		}
 	}
 
-	return result
+	return lipgloss.NewStyle().
+		Foreground(PastelLavender).
+		Bold(true).
+		Render(result)
 }

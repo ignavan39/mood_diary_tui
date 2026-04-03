@@ -84,6 +84,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case NavigateToEditMsg:
+
+		m.currentScreen = ScreenEdit
+		m.editModel.SetEntry(msg.Entry)
+
 	}
 
 	var cmd tea.Cmd

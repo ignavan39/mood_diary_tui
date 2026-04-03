@@ -294,34 +294,26 @@ func (m *StatsModel) renderRecentTrend() string {
 	}
 
 	values := make([]float64, len(entries))
+	var sum float64
+	minVal, maxVal := 10.0, 0.0
+
 	for i, entry := range entries {
-		values[i] = float64(entry.Level.Int())
+		val := float64(entry.Level.Int())
+		values[i] = val
+		sum += val
+		if val < minVal {
+			minVal = val
+		}
+		if val > maxVal {
+			maxVal = val
+		}
 	}
 
-	var sum float64
-	minVal, maxVal := values[0], values[0]
-	for _, v := range values {
-		sum += v
-		if v < minVal {
-			minVal = v
-		}
-		if v > maxVal {
-			maxVal = v
-		}
-	}
 	avg := sum / float64(len(values))
 
-	scaleStyle := lipgloss.NewStyle().Foreground(styles.TextMuted)
-	b.WriteString(scaleStyle.Render("10 │"))
-	b.WriteString("\n")
-	b.WriteString(scaleStyle.Render(" 5 │"))
-	b.WriteString("\n")
-	b.WriteString(scaleStyle.Render(" 0 │"))
-	b.WriteString("\n   └")
-
-	sparkline := styles.Sparkline(values, len(values))
+	sparkline := styles.Sparkline(values)
 	b.WriteString(sparkline)
-	b.WriteString("\n")
+	b.WriteString("\n\n")
 
 	if len(entries) > 0 {
 		info := fmt.Sprintf("%s — %s  │  Мин: %.0f  Сред: %.1f  Макс: %.0f",
