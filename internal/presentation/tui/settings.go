@@ -44,9 +44,9 @@ func NewSettingsModel(
 	return &SettingsModel{
 		translator:   translator,
 		settingsRepo: settingsRepo,
-		languages: languages,
-		step:       0,
-		tempCursor: 0,
+		languages:    languages,
+		step:         0,
+		tempCursor:   0,
 	}
 }
 
