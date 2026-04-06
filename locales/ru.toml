@@ -30,7 +30,7 @@ item_record = "📝 Записать настроение"
 item_stats = "📊 Посмотреть статистику"
 item_history = "📅 История записей"
 item_exit = "❌ Выход"
-item_settings = "⚙️ Настройки"
+item_settings = "⚙️  Настройки"
 
 
 [record]

@@ -30,7 +30,7 @@ item_record = "📝 Record mood today"
 item_stats = "📊 View statistics"
 item_history = "📅 Entry history"
 item_exit = "❌ Exit"
-item_settings = "⚙️ Settings"
+item_settings = "⚙️  Settings"
 
 [record]
 title_new = "📝 Record Mood"
