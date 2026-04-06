@@ -5,6 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ignavan39/mood-diary/internal/application/usecase"
+	"github.com/ignavan39/mood-diary/internal/domain/repository"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 )
 
 type Screen int
@@ -28,12 +30,20 @@ type Model struct {
 	historyModel *HistoryModel
 	editModel    *EditModel
 
+	translator   i18n.Translator
+	settingsRepo repository.SettingsRepository
+
 	width  int
 	height int
 	err    error
 }
 
-func NewModel(ctx context.Context, service *usecase.MoodService) *Model {
+func NewModel(
+	ctx context.Context,
+	service *usecase.MoodService,
+	translator i18n.Translator,
+	settingsRepo repository.SettingsRepository,
+) *Model {
 	m := &Model{
 		ctx:           ctx,
 		service:       service,
