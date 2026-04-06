@@ -11,11 +11,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ignavan39/mood-diary/internal/application/usecase"
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type RecordModel struct {
 	service       *usecase.MoodService
+	translator    i18n.Translator
 	moodLevel     int
 	noteInput     textinput.Model
 	step          int
@@ -25,17 +27,19 @@ type RecordModel struct {
 	errorMsg      string
 }
 
-func NewRecordModel(service *usecase.MoodService) *RecordModel {
+func NewRecordModel(service *usecase.MoodService, translator i18n.Translator) *RecordModel {
 	ti := textinput.New()
-	ti.Placeholder = "Добавьте заметку (необязательно)..."
+
+	ti.Placeholder = translator.T("record.prompt_note")
 	ti.CharLimit = 200
 	ti.Width = 50
 
 	return &RecordModel{
-		service:   service,
-		moodLevel: 5,
-		noteInput: ti,
-		step:      0,
+		service:    service,
+		translator: translator,
+		moodLevel:  5,
+		noteInput:  ti,
+		step:       0,
 	}
 }
 
@@ -59,7 +63,6 @@ func (m *RecordModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case ExistingEntryMsg:
-
 		m.existingEntry = msg.Entry
 		m.isUpdate = true
 		m.moodLevel = msg.Entry.Level.Int()
@@ -127,9 +130,6 @@ func (m *RecordModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.success = false
 		m.step = 0
 		return m, nil
-
-	default:
-
 	}
 
 	return m, nil
@@ -141,10 +141,8 @@ func (m *RecordModel) saveMood() tea.Cmd {
 
 		var err error
 		if m.isUpdate {
-
 			err = m.service.UpdateMood(ctx, time.Now(), m.moodLevel, m.noteInput.Value())
 		} else {
-
 			err = m.service.RecordMood(ctx, m.moodLevel, m.noteInput.Value(), nil)
 		}
 
@@ -158,40 +156,47 @@ func (m *RecordModel) saveMood() tea.Cmd {
 func (m *RecordModel) View() string {
 	var b strings.Builder
 
-	headerText := "📝 Записать настроение"
+	headerKey := "record.title_new"
 	if m.isUpdate {
-		headerText = "✏️ Изменить настроение"
+		headerKey = "record.title_edit"
 	}
-	header := styles.HeaderStyle.Render(headerText)
+	header := styles.HeaderStyle.Render(m.translator.T(headerKey))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	if m.isUpdate && m.step == 0 {
-		info := styles.InfoStyle.Render("ℹ️  Запись за сегодня уже существует. Вы можете её изменить.")
+
+		info := styles.InfoStyle.Render(m.translator.T("record.info_existing"))
 		b.WriteString(info)
 		b.WriteString("\n\n")
 	}
 
 	if m.success {
-		successText := "✓ Настроение успешно записано!"
+
+		successKey := "record.success_new"
 		if m.isUpdate {
-			successText = "✓ Настроение успешно обновлено!"
+			successKey = "record.success_edit"
 		}
-		success := styles.SuccessStyle.Render(successText)
+		success := styles.SuccessStyle.Render(m.translator.T(successKey))
 		b.WriteString(success)
 		b.WriteString("\n\n")
-		b.WriteString(styles.HelpStyle.Render("Возврат в меню..."))
+
+		b.WriteString(styles.HelpStyle.Render(m.translator.T("common.returning")))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if m.errorMsg != "" {
-		errMsg := styles.ErrorStyle.Render("✗ Ошибка: " + m.errorMsg)
+
+		errMsg := styles.ErrorStyle.Render(
+			m.translator.T("common.error_prefix") + m.errorMsg,
+		)
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
 
 	if m.step == 0 {
-		b.WriteString(styles.SubtitleStyle.Render("Как вы себя чувствуете сегодня?"))
+
+		b.WriteString(styles.SubtitleStyle.Render(m.translator.T("record.prompt_feeling")))
 		b.WriteString("\n\n")
 
 		moodLevel, _ := entity.NewMoodLevel(m.moodLevel)
@@ -199,52 +204,60 @@ func (m *RecordModel) View() string {
 		b.WriteString(m.renderMoodScale())
 		b.WriteString("\n\n")
 
-		current := fmt.Sprintf("%s %s (%d/10)",
+		desc := m.translator.T(moodLevel.StringKey())
+		current := fmt.Sprintf(m.translator.T("record.box_mood"),
 			moodLevel.Emoji(),
-			moodLevel.String(),
+			desc,
 			m.moodLevel)
 		currentStyle := styles.MoodStyle(m.moodLevel)
 		b.WriteString(currentStyle.Render(current))
 		b.WriteString("\n\n")
 
-		help := styles.HelpStyle.Render("←/→: Изменить • Enter: Далее • Esc: Назад")
+		help := styles.HelpStyle.Render(m.translator.T("help.navigation.record_step0"))
 		b.WriteString(help)
 	}
 
 	if m.step == 1 {
-		b.WriteString(styles.SubtitleStyle.Render("Добавьте заметку (необязательно):"))
+
+		b.WriteString(styles.SubtitleStyle.Render(m.translator.T("record.prompt_note")))
 		b.WriteString("\n\n")
 
 		b.WriteString(m.noteInput.View())
 		b.WriteString("\n\n")
 
-		help := styles.HelpStyle.Render("Enter: Подтвердить • Esc: Назад")
+		help := styles.HelpStyle.Render(m.translator.T("help.navigation.record_step1"))
 		b.WriteString(help)
 	}
 
 	if m.step == 2 {
-		confirmText := "Подтвердите запись:"
+
+		confirmKey := "record.prompt_confirm_new"
 		if m.isUpdate {
-			confirmText = "Подтвердите изменение:"
+			confirmKey = "record.prompt_confirm_edit"
 		}
-		b.WriteString(styles.SubtitleStyle.Render(confirmText))
+		b.WriteString(styles.SubtitleStyle.Render(m.translator.T(confirmKey)))
 		b.WriteString("\n\n")
 
 		moodLevel, _ := entity.NewMoodLevel(m.moodLevel)
 
 		note := m.noteInput.Value()
 		if note == "" {
-			note = "(без заметки)"
+
+			note = m.translator.T("common.no_note")
 		}
+
+		desc := m.translator.T(moodLevel.StringKey())
 
 		box := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(styles.GetMoodColor(m.moodLevel)).
 			Padding(1, 2).
 			Render(fmt.Sprintf(
-				"Настроение: %s %s (%d/10)\nЗаметка: %s\nДата: %s",
+				m.translator.T("record.box_mood")+"\n"+
+					m.translator.T("record.box_note")+"\n"+
+					m.translator.T("record.box_date"),
 				moodLevel.Emoji(),
-				moodLevel.String(),
+				desc,
 				m.moodLevel,
 				note,
 				time.Now().Format("02.01.2006"),
@@ -253,12 +266,13 @@ func (m *RecordModel) View() string {
 		b.WriteString(box)
 		b.WriteString("\n\n")
 
-		help := styles.HelpStyle.Render("y/Enter: Сохранить • n/Esc: Отмена")
+		help := styles.HelpStyle.Render(m.translator.T("help.navigation.record_step2"))
 		b.WriteString(help)
 	}
 
 	if m.step == 3 {
-		b.WriteString(styles.InfoStyle.Render("Сохранение..."))
+
+		b.WriteString(styles.InfoStyle.Render(m.translator.T("record.saving")))
 	}
 
 	return lipgloss.NewStyle().
@@ -274,7 +288,6 @@ func (m *RecordModel) renderMoodScale() string {
 		emoji := moodLevel.Emoji()
 
 		if i == m.moodLevel {
-
 			selected := lipgloss.NewStyle().
 				Foreground(styles.TextLight).
 				Background(styles.GetMoodColor(i)).
@@ -285,7 +298,6 @@ func (m *RecordModel) renderMoodScale() string {
 				Render(emoji)
 			parts = append(parts, selected)
 		} else {
-
 			unselected := lipgloss.NewStyle().
 				Foreground(styles.GetMoodColor(i)).
 				Faint(true).

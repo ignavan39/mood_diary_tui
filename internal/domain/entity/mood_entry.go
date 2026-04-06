@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,36 +32,19 @@ func (m MoodLevel) Int() int {
 	return int(m)
 }
 
+func (m MoodLevel) StringKey() string {
+	return fmt.Sprintf("mood.level.%d", m)
+}
+
 func (m MoodLevel) String() string {
-	descriptions := map[MoodLevel]string{
-		0:  "Ужасно",
-		1:  "Очень плохо",
-		2:  "Плохо",
-		3:  "Не очень",
-		4:  "Ниже среднего",
-		5:  "Средне",
-		6:  "Неплохо",
-		7:  "Хорошо",
-		8:  "Очень хорошо",
-		9:  "Отлично",
-		10: "Великолепно",
-	}
-	return descriptions[m]
+
+	return fmt.Sprintf("level_%d", m)
 }
 
 func (m MoodLevel) Emoji() string {
 	emojis := map[MoodLevel]string{
-		0:  "😢",
-		1:  "😞",
-		2:  "😔",
-		3:  "😕",
-		4:  "😐",
-		5:  "😶",
-		6:  "🙂",
-		7:  "😊",
-		8:  "😄",
-		9:  "😁",
-		10: "🤩",
+		0: "😢", 1: "😞", 2: "😔", 3: "😕", 4: "😐",
+		5: "😶", 6: "🙂", 7: "😊", 8: "😄", 9: "😁", 10: "🤩",
 	}
 	return emojis[m]
 }

@@ -22,6 +22,7 @@ edit_step0 = "←/→: Change • Enter: Next • d: Delete • Esc: Back"
 edit_step1 = "Enter: Confirm • Esc: Back"
 edit_step2 = "y/Enter: Save • n/Esc: Cancel"
 delete_confirm = "y: Yes, delete • n/Esc: Cancel"
+settings = "↑/↓: Select • Enter: Confirm • Esc: Back"
 
 [menu]
 subtitle = "Mood Diary • Track your emotions 🌸"
@@ -29,11 +30,12 @@ item_record = "📝 Record mood today"
 item_stats = "📊 View statistics"
 item_history = "📅 Entry history"
 item_exit = "❌ Exit"
+item_settings = "⚙️ Settings"
 
 [record]
 title_new = "📝 Record Mood"
 title_edit = "✏️ Edit Mood"
-info_existing = "ℹ️ Entry for today already exists. You can edit it."
+info_existing = "ℹ️  Entry for today already exists. You can edit it."
 success_new = "✓ Mood recorded successfully!"
 success_edit = "✓ Mood updated successfully!"
 prompt_feeling = "How do you feel today?"
@@ -79,3 +81,31 @@ prompt_edit_note = "Edit note:"
 prompt_confirm_changes = "Confirm changes:"
 delete_title = "⚠️ Delete this entry?"
 delete_warning = "Entry from %s will be permanently deleted.\nAre you sure?"
+
+[settings]
+title = "⚙️ Settings"
+option_language = "Language"
+option_language_desc = "Select interface language"
+confirm_change = "Confirm language change"
+confirm_text = "Change language to %s?\n\nThe interface will be updated immediately."
+success_edit = "✓ Language changed successfully!"
+
+[settings.language]
+en = "English"
+ru = "Russian"
+
+[settings.confirm]
+save = "✓ Settings saved!"
+
+[mood.level]
+0 = "Terrible"
+1 = "Very bad"
+2 = "Bad"
+3 = "Not great"
+4 = "Below average"
+5 = "Neutral"
+6 = "Okay"
+7 = "Good"
+8 = "Very good"
+9 = "Great"
+10 = "Excellent"

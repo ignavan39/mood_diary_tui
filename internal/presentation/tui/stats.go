@@ -10,24 +10,34 @@ import (
 	"github.com/ignavan39/mood-diary/internal/application/usecase"
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type StatsModel struct {
-	service  *usecase.MoodService
-	period   usecase.Period
-	periods  []usecase.Period
-	cursor   int
-	stats    *repository.MoodStatistics
-	entries  []*entity.MoodEntry
-	loading  bool
-	errorMsg string
+	service    *usecase.MoodService
+	translator i18n.Translator
+	period     usecase.Period
+	periods    []usecase.Period
+	cursor     int
+	stats      *repository.MoodStatistics
+	entries    []*entity.MoodEntry
+	loading    bool
+	errorMsg   string
 }
 
-func NewStatsModel(service *usecase.MoodService) *StatsModel {
+func (m *StatsModel) t(key string, args ...any) string {
+	if m.translator == nil {
+		return key
+	}
+	return m.translator.T(key, args...)
+}
+
+func NewStatsModel(service *usecase.MoodService, translator i18n.Translator) *StatsModel {
 	m := &StatsModel{
-		service: service,
-		period:  usecase.PeriodWeek,
+		service:    service,
+		translator: translator,
+		period:     usecase.PeriodWeek,
 		periods: []usecase.Period{
 			usecase.PeriodWeek,
 			usecase.PeriodMonth,
@@ -76,9 +86,6 @@ func (m *StatsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ErrorMsg:
 		m.errorMsg = msg.Error.Error()
 		m.loading = false
-
-	default:
-
 	}
 
 	return m, nil
@@ -109,12 +116,13 @@ func (m *StatsModel) loadStats() tea.Cmd {
 func (m *StatsModel) View() string {
 	var b strings.Builder
 
-	header := styles.HeaderStyle.Render("📊 Статистика настроений")
+	header := styles.HeaderStyle.Render(m.t("stats.title"))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	if m.errorMsg != "" {
-		errMsg := styles.ErrorStyle.Render("✗ Ошибка: " + m.errorMsg)
+
+		errMsg := styles.ErrorStyle.Render(m.t("common.error_prefix") + m.errorMsg)
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
@@ -123,14 +131,17 @@ func (m *StatsModel) View() string {
 	b.WriteString("\n\n")
 
 	if m.loading {
-		b.WriteString(styles.InfoStyle.Render("Загрузка..."))
+
+		b.WriteString(styles.InfoStyle.Render(m.t("common.loading")))
 		return b.String()
 	}
 
 	if m.stats == nil || m.stats.TotalEntries == 0 {
-		b.WriteString(styles.InfoStyle.Render("Нет данных за выбранный период"))
+
+		b.WriteString(styles.InfoStyle.Render(m.t("common.no_data")))
 		b.WriteString("\n\n")
-		help := styles.HelpStyle.Render("←/→: Изменить период • r: Обновить • Esc: Назад")
+
+		help := styles.HelpStyle.Render(m.t("help.navigation.stats"))
 		b.WriteString(help)
 		return b.String()
 	}
@@ -144,7 +155,7 @@ func (m *StatsModel) View() string {
 	b.WriteString(m.renderRecentTrend())
 	b.WriteString("\n\n")
 
-	help := styles.HelpStyle.Render("←/→: Изменить период • r: Обновить • Esc: Назад")
+	help := styles.HelpStyle.Render(m.t("help.navigation.stats"))
 	b.WriteString(help)
 
 	return lipgloss.NewStyle().
@@ -155,8 +166,17 @@ func (m *StatsModel) View() string {
 func (m *StatsModel) renderPeriodSelector() string {
 	var items []string
 
+	periodKeys := []string{
+		"stats.period_week",
+		"stats.period_month",
+		"stats.period_quarter",
+		"stats.period_year",
+		"stats.period_all",
+	}
+
 	for i, period := range m.periods {
-		text := period.String()
+		_ = period
+		text := m.t(periodKeys[i])
 		if i == m.cursor {
 			items = append(items, styles.SelectedButtonStyle.Render(text))
 		} else {
@@ -173,7 +193,7 @@ func (m *StatsModel) renderStatsCards() string {
 	}
 
 	totalCard := m.createStatCard(
-		"Всего записей",
+		m.t("stats.card_total"),
 		fmt.Sprintf("%d", m.stats.TotalEntries),
 		styles.PastelSky,
 	)
@@ -185,24 +205,22 @@ func (m *StatsModel) renderStatsCards() string {
 		avgEmoji = avgLevel.Emoji()
 	}
 	avgCard := m.createStatCard(
-		"Средний уровень",
+		m.t("stats.card_average"),
 		fmt.Sprintf("%.1f %s", avgMood, avgEmoji),
 		styles.GetMoodColor(int(avgMood+0.5)),
 	)
 
-	trendText := "─"
+	trendText := m.t("stats.trend_stable")
 	trendColor := styles.PastelGray
 	if m.stats.Trend > 0.5 {
-		trendText = "↑ Улучшается"
+		trendText = m.t("stats.trend_improving")
 		trendColor = styles.SuccessGreen
 	} else if m.stats.Trend < -0.5 {
-		trendText = "↓ Ухудшается"
+		trendText = m.t("stats.trend_worsening")
 		trendColor = styles.ErrorRed
-	} else {
-		trendText = "─ Стабильно"
 	}
 	trendCard := m.createStatCard(
-		"Тренд",
+		m.t("stats.card_trend"),
 		trendText,
 		trendColor,
 	)
@@ -235,7 +253,7 @@ func (m *StatsModel) renderMoodDistribution() string {
 
 	var b strings.Builder
 
-	b.WriteString(styles.SubtitleStyle.Render("Распределение настроений"))
+	b.WriteString(styles.SubtitleStyle.Render(m.t("stats.section_distribution")))
 	b.WriteString("\n\n")
 
 	maxCount := 0
@@ -257,12 +275,12 @@ func (m *StatsModel) renderMoodDistribution() string {
 		bar := strings.Repeat("█", barWidth)
 		barStyle := lipgloss.NewStyle().
 			Foreground(styles.GetMoodColor(level))
-
+		desc := m.t(moodLevel.StringKey())
 		line := fmt.Sprintf("%2d %s  %s %s (%d)",
 			level,
 			moodLevel.Emoji(),
 			barStyle.Render(bar),
-			lipgloss.NewStyle().Foreground(styles.TextMuted).Render(moodLevel.String()),
+			lipgloss.NewStyle().Foreground(styles.TextMuted).Render(desc),
 			count,
 		)
 
@@ -280,7 +298,7 @@ func (m *StatsModel) renderRecentTrend() string {
 
 	var b strings.Builder
 
-	b.WriteString(styles.SubtitleStyle.Render("Динамика настроения"))
+	b.WriteString(styles.SubtitleStyle.Render(m.t("stats.section_trend")))
 	b.WriteString("\n\n")
 
 	limit := 14
@@ -316,7 +334,8 @@ func (m *StatsModel) renderRecentTrend() string {
 	b.WriteString("\n\n")
 
 	if len(entries) > 0 {
-		info := fmt.Sprintf("%s — %s  │  Мин: %.0f  Сред: %.1f  Макс: %.0f",
+
+		info := fmt.Sprintf(m.t("stats.trend_info"),
 			entries[0].Date.Format("02.01"),
 			entries[len(entries)-1].Date.Format("02.01"),
 			minVal,

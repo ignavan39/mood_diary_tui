@@ -17,6 +17,7 @@ const (
 	ScreenStats
 	ScreenHistory
 	ScreenEdit
+	ScreenSettings
 )
 
 type Model struct {
@@ -24,11 +25,12 @@ type Model struct {
 	service       *usecase.MoodService
 	currentScreen Screen
 
-	menuModel    *MenuModel
-	recordModel  *RecordModel
-	statsModel   *StatsModel
-	historyModel *HistoryModel
-	editModel    *EditModel
+	menuModel     *MenuModel
+	recordModel   *RecordModel
+	statsModel    *StatsModel
+	historyModel  *HistoryModel
+	editModel     *EditModel
+	settingsModel *SettingsModel
 
 	translator   i18n.Translator
 	settingsRepo repository.SettingsRepository
@@ -48,13 +50,16 @@ func NewModel(
 		ctx:           ctx,
 		service:       service,
 		currentScreen: ScreenMenu,
+		translator:    translator,
+		settingsRepo:  settingsRepo,
 	}
 
-	m.menuModel = NewMenuModel()
-	m.recordModel = NewRecordModel(service)
-	m.statsModel = NewStatsModel(service)
-	m.historyModel = NewHistoryModel(service)
-	m.editModel = NewEditModel(service)
+	m.menuModel = NewMenuModel(translator)
+	m.recordModel = NewRecordModel(service, translator)
+	m.statsModel = NewStatsModel(service, translator)
+	m.historyModel = NewHistoryModel(service, translator)
+	m.editModel = NewEditModel(service, translator)
+	m.settingsModel = NewSettingsModel(translator, settingsRepo)
 
 	return m
 }
@@ -127,8 +132,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var editModel tea.Model
 		editModel, cmd = m.editModel.Update(msg)
 		m.editModel = editModel.(*EditModel)
-	}
 
+	case ScreenSettings:
+		var settingsModel tea.Model
+		settingsModel, cmd = m.settingsModel.Update(msg)
+		m.settingsModel = settingsModel.(*SettingsModel)
+	}
 	if cmd != nil {
 		cmds = append(cmds, cmd)
 	}
@@ -145,18 +154,21 @@ func (m *Model) initCurrentScreen() tea.Cmd {
 		return m.menuModel.Init()
 	case ScreenRecord:
 
-		m.recordModel = NewRecordModel(m.service)
+		m.recordModel = NewRecordModel(m.service, m.translator)
 		return m.recordModel.Init()
 	case ScreenStats:
 
-		m.statsModel = NewStatsModel(m.service)
+		m.statsModel = NewStatsModel(m.service, m.translator)
 		return m.statsModel.Init()
 	case ScreenHistory:
 
-		m.historyModel = NewHistoryModel(m.service)
+		m.historyModel = NewHistoryModel(m.service, m.translator)
 		return m.historyModel.Init()
 	case ScreenEdit:
 		return m.editModel.Init()
+	case ScreenSettings:
+		m.settingsModel = NewSettingsModel(m.translator, m.settingsRepo)
+		return m.settingsModel.Init()
 	}
 	return nil
 }
@@ -173,6 +185,8 @@ func (m *Model) View() string {
 		return m.historyModel.View()
 	case ScreenEdit:
 		return m.editModel.View()
+	case ScreenSettings:
+		return m.settingsModel.View()
 	default:
 		return "Unknown screen"
 	}

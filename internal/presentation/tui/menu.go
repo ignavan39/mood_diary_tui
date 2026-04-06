@@ -6,25 +6,34 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type MenuModel struct {
-	choices  []string
-	cursor   int
-	selected int
+	choices    []string
+	cursor     int
+	selected   int
+	translator i18n.Translator
 }
 
-func NewMenuModel() *MenuModel {
+func NewMenuModel(translator i18n.Translator) *MenuModel {
 	return &MenuModel{
-		choices: []string{
-			"📝 Записать настроение",
-			"📊 Посмотреть статистику",
-			"📅 История записей",
-			"❌ Выход",
-		},
-		cursor:   0,
-		selected: -1,
+
+		choices:    nil,
+		cursor:     0,
+		selected:   -1,
+		translator: translator,
+	}
+}
+
+func (m *MenuModel) getChoices() []string {
+	return []string{
+		m.translator.T("menu.item_record"),
+		m.translator.T("menu.item_stats"),
+		m.translator.T("menu.item_history"),
+		m.translator.T("menu.item_settings"),
+		m.translator.T("menu.item_exit"),
 	}
 }
 
@@ -41,7 +50,9 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
+
+			choices := m.getChoices()
+			if m.cursor < len(choices)-1 {
 				m.cursor++
 			}
 		case "enter", " ":
@@ -50,9 +61,6 @@ func (m *MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
-
-	default:
-
 	}
 	return m, nil
 }
@@ -66,6 +74,8 @@ func (m *MenuModel) handleSelection() tea.Cmd {
 	case 2:
 		return Navigate(ScreenHistory)
 	case 3:
+		return Navigate(ScreenSettings)
+	case 4:
 		return tea.Quit
 	}
 	return nil
@@ -74,11 +84,13 @@ func (m *MenuModel) handleSelection() tea.Cmd {
 func (m *MenuModel) View() string {
 	var b strings.Builder
 
+	choices := m.getChoices()
+
 	header := styles.HeaderStyle.Render(m.renderHeader())
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
-	for i, choice := range m.choices {
+	for i, choice := range choices {
 		cursor := "  "
 		if m.cursor == i {
 			cursor = "→ "
@@ -90,7 +102,8 @@ func (m *MenuModel) View() string {
 	}
 
 	b.WriteString("\n")
-	help := styles.HelpStyle.Render("↑/↓: Навигация • Enter: Выбрать • q: Выход")
+
+	help := styles.HelpStyle.Render(m.translator.T("help.navigation.menu"))
 	b.WriteString(help)
 
 	return lipgloss.NewStyle().
@@ -99,6 +112,7 @@ func (m *MenuModel) View() string {
 }
 
 func (m *MenuModel) renderHeader() string {
+
 	title := `
  ███╗   ███╗ ██████╗  ██████╗ ██████╗     ██████╗ ██╗ █████╗ ██████╗ ██╗   ██╗
  ████╗ ████║██╔═══██╗██╔═══██╗██╔══██╗    ██╔══██╗██║██╔══██╗██╔══██╗╚██╗ ██╔╝
@@ -108,7 +122,7 @@ func (m *MenuModel) renderHeader() string {
  ╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝     ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   
 `
 
-	subtitle := "Дневник настроения • Отслеживайте свои эмоции 🌸"
+	subtitle := m.translator.T("menu.subtitle")
 
 	titleStyle := lipgloss.NewStyle().
 		Foreground(styles.PastelLavender).
