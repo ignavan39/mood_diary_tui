@@ -9,22 +9,32 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ignavan39/mood-diary/internal/application/usecase"
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type HistoryModel struct {
-	service  *usecase.MoodService
-	entries  []*entity.MoodEntry
-	cursor   int
-	loading  bool
-	errorMsg string
+	service    *usecase.MoodService
+	translator i18n.Translator
+	entries    []*entity.MoodEntry
+	cursor     int
+	loading    bool
+	errorMsg   string
 }
 
-func NewHistoryModel(service *usecase.MoodService) *HistoryModel {
+func (m *HistoryModel) t(key string, args ...any) string {
+	if m.translator == nil {
+		return key
+	}
+	return m.translator.T(key, args...)
+}
+
+func NewHistoryModel(service *usecase.MoodService, translator i18n.Translator) *HistoryModel {
 	return &HistoryModel{
-		service: service,
-		cursor:  0,
-		loading: true,
+		service:    service,
+		translator: translator,
+		cursor:     0,
+		loading:    true,
 	}
 }
 
@@ -53,7 +63,6 @@ func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter", " ", "e":
 			if len(m.entries) > 0 && m.cursor < len(m.entries) {
-
 				return m, NavigateToEdit(m.entries[m.cursor])
 			}
 		case "r":
@@ -77,9 +86,6 @@ func (m *HistoryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ErrorMsg:
 		m.errorMsg = msg.Error.Error()
 		m.loading = false
-
-	default:
-
 	}
 
 	return m, nil
@@ -100,25 +106,29 @@ func (m *HistoryModel) loadHistory() tea.Cmd {
 func (m *HistoryModel) View() string {
 	var b strings.Builder
 
-	header := styles.HeaderStyle.Render("📅 История записей")
+	header := styles.HeaderStyle.Render(m.t("history.title"))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	if m.errorMsg != "" {
-		errMsg := styles.ErrorStyle.Render("✗ Ошибка: " + m.errorMsg)
+
+		errMsg := styles.ErrorStyle.Render(m.t("common.error_prefix") + m.errorMsg)
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
 
 	if m.loading {
-		b.WriteString(styles.InfoStyle.Render("Загрузка..."))
+
+		b.WriteString(styles.InfoStyle.Render(m.t("common.loading")))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if len(m.entries) == 0 {
-		b.WriteString(styles.InfoStyle.Render("Нет записей"))
+
+		b.WriteString(styles.InfoStyle.Render(m.t("common.no_entries")))
 		b.WriteString("\n\n")
-		help := styles.HelpStyle.Render("r: Обновить • Esc: Назад")
+
+		help := styles.HelpStyle.Render(m.t("help.navigation.history"))
 		b.WriteString(help)
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
@@ -126,7 +136,7 @@ func (m *HistoryModel) View() string {
 	b.WriteString(m.renderEntries())
 	b.WriteString("\n\n")
 
-	help := styles.HelpStyle.Render("↑/↓: Навигация • Enter/e: Редактировать • r: Обновить • Esc: Назад")
+	help := styles.HelpStyle.Render(m.t("help.navigation.history"))
 	b.WriteString(help)
 
 	return lipgloss.NewStyle().
@@ -142,10 +152,10 @@ func (m *HistoryModel) renderEntries() string {
 		Bold(true)
 
 	header := fmt.Sprintf("%-12s  %-4s  %-15s  %-30s",
-		"Дата",
+		m.t("history.header_date"),
 		"",
-		"Настроение",
-		"Заметка",
+		m.t("history.header_mood"),
+		m.t("history.header_note"),
 	)
 	b.WriteString(headerStyle.Render(header))
 	b.WriteString("\n")
@@ -166,11 +176,12 @@ func (m *HistoryModel) renderEntries() string {
 }
 
 func (m *HistoryModel) renderEntry(entry *entity.MoodEntry, selected bool) string {
-
 	dateStr := entry.Date.Format("02.01.2006")
 
 	emoji := entry.Level.Emoji()
-	moodText := fmt.Sprintf("%s %2d/10", emoji, entry.Level.Int())
+
+	moodDesc := m.t(entry.Level.StringKey())
+	moodText := fmt.Sprintf("%s %2d/10", moodDesc, entry.Level.Int())
 
 	note := entry.Note
 	maxNoteLen := 30
@@ -178,10 +189,11 @@ func (m *HistoryModel) renderEntry(entry *entity.MoodEntry, selected bool) strin
 		note = note[:maxNoteLen-3] + "..."
 	}
 	if note == "" {
+
 		note = lipgloss.NewStyle().
 			Foreground(styles.TextMuted).
 			Italic(true).
-			Render("(без заметки)")
+			Render(m.t("common.no_note"))
 	}
 
 	line := fmt.Sprintf("%-12s  %-4s  %-15s  %-30s",

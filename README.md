@@ -16,7 +16,7 @@
 
 Beautiful terminal mood tracker with interactive TUI interface. Track your emotions, analyze trends, and take care of your mental health.
 
-![main](./.assets/main.png)
+![main](./.assets/main-en.png)
 
 
 ## ✨ Features
@@ -367,7 +367,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 Красивый терминальный дневник настроения с интерактивным интерфейсом. Отслеживайте свои эмоции, анализируйте тренды и заботьтесь о своём ментальном здоровье.
 
-![main](./.assets/main.png)
+![main](./.assets/main-ru.png)
 
 ## ✨ Возможности
 

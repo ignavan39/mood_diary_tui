@@ -11,11 +11,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ignavan39/mood-diary/internal/application/usecase"
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type EditModel struct {
 	service    *usecase.MoodService
+	translator i18n.Translator
 	entry      *entity.MoodEntry
 	moodLevel  int
 	noteInput  textinput.Model
@@ -26,16 +28,25 @@ type EditModel struct {
 	errorMsg   string
 }
 
-func NewEditModel(service *usecase.MoodService) *EditModel {
+func (m *EditModel) t(key string, args ...any) string {
+	if m.translator == nil {
+		return key
+	}
+	return m.translator.T(key, args...)
+}
+
+func NewEditModel(service *usecase.MoodService, translator i18n.Translator) *EditModel {
 	ti := textinput.New()
-	ti.Placeholder = "Добавьте заметку (необязательно)..."
+
+	ti.Placeholder = translator.T("record.prompt_note")
 	ti.CharLimit = 200
 	ti.Width = 50
 
 	return &EditModel{
-		service:   service,
-		noteInput: ti,
-		step:      0,
+		service:    service,
+		translator: translator,
+		noteInput:  ti,
+		step:       0,
 	}
 }
 
@@ -75,7 +86,6 @@ func (m *EditModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.noteInput.Focus()
 				return m, textinput.Blink
 			case "d":
-
 				m.showDelete = true
 				m.step = 4
 			case "esc", "q":
@@ -141,9 +151,6 @@ func (m *EditModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.success = false
 		m.step = 0
 		return m, nil
-
-	default:
-
 	}
 
 	return m, nil
@@ -172,46 +179,53 @@ func (m *EditModel) deleteEntry() tea.Cmd {
 }
 
 func (m *EditModel) View() string {
+
 	if m.entry == nil {
 		return lipgloss.NewStyle().
 			Padding(2, 4).
-			Render("Запись не выбрана. Нажмите Esc для возврата.")
+			Render(m.t("edit.no_entry_selected"))
 	}
 
 	var b strings.Builder
 
-	header := styles.HeaderStyle.Render("✏️ Редактировать запись")
+	header := styles.HeaderStyle.Render(m.t("edit.title"))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	if m.success {
-		success := styles.SuccessStyle.Render("✓ Запись успешно обновлена!")
+
+		success := styles.SuccessStyle.Render(m.t("edit.success_updated"))
 		b.WriteString(success)
 		b.WriteString("\n\n")
-		b.WriteString(styles.HelpStyle.Render("Возврат к истории..."))
+		b.WriteString(styles.HelpStyle.Render(m.t("edit.returning_to_history")))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if m.deleted {
-		deleted := styles.SuccessStyle.Render("✓ Запись успешно удалена!")
+
+		deleted := styles.SuccessStyle.Render(m.t("edit.success_deleted"))
 		b.WriteString(deleted)
 		b.WriteString("\n\n")
-		b.WriteString(styles.HelpStyle.Render("Возврат к истории..."))
+		b.WriteString(styles.HelpStyle.Render(m.t("edit.returning_to_history")))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if m.errorMsg != "" {
-		errMsg := styles.ErrorStyle.Render("✗ Ошибка: " + m.errorMsg)
+
+		errMsg := styles.ErrorStyle.Render(m.t("common.error_prefix") + m.errorMsg)
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
 
-	dateInfo := fmt.Sprintf("Дата: %s", m.entry.Date.Format("02.01.2006"))
+	dateInfo := fmt.Sprintf("%s %s",
+		m.t("common.date_label"),
+		m.entry.Date.Format("02.01.2006"))
 	b.WriteString(styles.InfoStyle.Render(dateInfo))
 	b.WriteString("\n\n")
 
 	if m.step == 0 {
-		b.WriteString(styles.SubtitleStyle.Render("Выберите новое настроение:"))
+
+		b.WriteString(styles.SubtitleStyle.Render(m.t("edit.prompt_select_mood")))
 		b.WriteString("\n\n")
 
 		moodLevel, _ := entity.NewMoodLevel(m.moodLevel)
@@ -219,38 +233,41 @@ func (m *EditModel) View() string {
 		b.WriteString(m.renderMoodScale())
 		b.WriteString("\n\n")
 
-		current := fmt.Sprintf("%s %s (%d/10)",
+		current := fmt.Sprintf(m.t("record.box_mood"),
 			moodLevel.Emoji(),
-			moodLevel.String(),
+			m.t(moodLevel.StringKey()),
 			m.moodLevel)
 		currentStyle := styles.MoodStyle(m.moodLevel)
 		b.WriteString(currentStyle.Render(current))
 		b.WriteString("\n\n")
 
-		help := styles.HelpStyle.Render("←/→: Изменить • Enter: Далее • d: Удалить • Esc: Назад")
+		help := styles.HelpStyle.Render(m.t("help.navigation.edit_step0"))
 		b.WriteString(help)
 	}
 
 	if m.step == 1 {
-		b.WriteString(styles.SubtitleStyle.Render("Измените заметку:"))
+
+		b.WriteString(styles.SubtitleStyle.Render(m.t("edit.prompt_edit_note")))
 		b.WriteString("\n\n")
 
 		b.WriteString(m.noteInput.View())
 		b.WriteString("\n\n")
 
-		help := styles.HelpStyle.Render("Enter: Подтвердить • Esc: Назад")
+		help := styles.HelpStyle.Render(m.t("help.navigation.edit_step1"))
 		b.WriteString(help)
 	}
 
 	if m.step == 2 {
-		b.WriteString(styles.SubtitleStyle.Render("Подтвердите изменения:"))
+
+		b.WriteString(styles.SubtitleStyle.Render(m.t("edit.prompt_confirm_changes")))
 		b.WriteString("\n\n")
 
 		moodLevel, _ := entity.NewMoodLevel(m.moodLevel)
 
 		note := m.noteInput.Value()
 		if note == "" {
-			note = "(без заметки)"
+
+			note = m.t("common.no_note")
 		}
 
 		box := lipgloss.NewStyle().
@@ -258,9 +275,11 @@ func (m *EditModel) View() string {
 			BorderForeground(styles.GetMoodColor(m.moodLevel)).
 			Padding(1, 2).
 			Render(fmt.Sprintf(
-				"Настроение: %s %s (%d/10)\nЗаметка: %s\nДата: %s",
+				m.t("record.box_mood")+"\n"+
+					m.t("record.box_note")+"\n"+
+					m.t("record.box_date"),
 				moodLevel.Emoji(),
-				moodLevel.String(),
+				m.t(moodLevel.StringKey()),
 				m.moodLevel,
 				note,
 				m.entry.Date.Format("02.01.2006"),
@@ -269,16 +288,18 @@ func (m *EditModel) View() string {
 		b.WriteString(box)
 		b.WriteString("\n\n")
 
-		help := styles.HelpStyle.Render("y/Enter: Сохранить • n/Esc: Отмена")
+		help := styles.HelpStyle.Render(m.t("help.navigation.edit_step2"))
 		b.WriteString(help)
 	}
 
 	if m.step == 3 {
-		b.WriteString(styles.InfoStyle.Render("Сохранение..."))
+
+		b.WriteString(styles.InfoStyle.Render(m.t("common.loading")))
 	}
 
 	if m.step == 4 && m.showDelete {
-		b.WriteString(styles.SubtitleStyle.Render("⚠️  Удалить эту запись?"))
+
+		b.WriteString(styles.SubtitleStyle.Render(m.t("edit.delete_title")))
 		b.WriteString("\n\n")
 
 		warning := lipgloss.NewStyle().
@@ -286,14 +307,14 @@ func (m *EditModel) View() string {
 			BorderForeground(styles.ErrorRed).
 			Padding(1, 2).
 			Render(fmt.Sprintf(
-				"Запись от %s будет удалена без возможности восстановления.\n\nВы уверены?",
+				m.t("edit.delete_warning"),
 				m.entry.Date.Format("02.01.2006"),
 			))
 
 		b.WriteString(warning)
 		b.WriteString("\n\n")
 
-		help := styles.HelpStyle.Render("y: Да, удалить • n/Esc: Отмена")
+		help := styles.HelpStyle.Render(m.t("help.navigation.delete_confirm"))
 		b.WriteString(help)
 	}
 
@@ -310,7 +331,6 @@ func (m *EditModel) renderMoodScale() string {
 		emoji := moodLevel.Emoji()
 
 		if i == m.moodLevel {
-
 			selected := lipgloss.NewStyle().
 				Foreground(styles.TextLight).
 				Background(styles.GetMoodColor(i)).
@@ -321,7 +341,6 @@ func (m *EditModel) renderMoodScale() string {
 				Render(emoji)
 			parts = append(parts, selected)
 		} else {
-
 			unselected := lipgloss.NewStyle().
 				Foreground(styles.GetMoodColor(i)).
 				Faint(true).
