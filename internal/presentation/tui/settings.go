@@ -33,13 +33,18 @@ func NewSettingsModel(
 	translator i18n.Translator,
 	settingsRepo repository.SettingsRepository,
 ) *SettingsModel {
+
+	var languages []LanguageOption
+	for _, loc := range i18n.SupportedLocales() {
+		languages = append(languages, LanguageOption{
+			Code:  string(loc),
+			Label: fmt.Sprintf("settings.language.%s", loc),
+		})
+	}
 	return &SettingsModel{
 		translator:   translator,
 		settingsRepo: settingsRepo,
-		languages: []LanguageOption{
-			{Code: "en", Label: "settings.language.en"},
-			{Code: "ru", Label: "settings.language.ru"},
-		},
+		languages: languages,
 		step:       0,
 		tempCursor: 0,
 	}
