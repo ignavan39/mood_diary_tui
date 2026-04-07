@@ -288,26 +288,25 @@ func (m *RecordModel) renderMoodScale() string {
 		emoji := moodLevel.Emoji()
 
 		if i == m.moodLevel {
-			selected := lipgloss.NewStyle().
+			selectedStyle := lipgloss.NewStyle().
 				Foreground(styles.TextLight).
 				Background(styles.GetMoodColor(i)).
-				Border(lipgloss.ThickBorder()).
-				BorderForeground(lipgloss.Color("#4A4A4A")).
-				Padding(0, 1).
-				Bold(false).
-				Render(emoji)
+				Bold(true)
+			selected := selectedStyle.Render("[ " + emoji + " ]")
+
 			parts = append(parts, selected)
 		} else {
-			unselected := lipgloss.NewStyle().
+			unselectedStyle := lipgloss.NewStyle().
 				Foreground(styles.GetMoodColor(i)).
 				Faint(true).
 				Padding(0, 1).
 				Render(emoji)
-			parts = append(parts, unselected)
+
+			parts = append(parts, unselectedStyle)
 		}
 	}
 
-	return lipgloss.JoinHorizontal(lipgloss.Left, parts...)
+	return lipgloss.JoinHorizontal(lipgloss.Center, parts...)
 }
 
 type ExistingEntryMsg struct {

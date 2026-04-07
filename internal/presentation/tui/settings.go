@@ -201,19 +201,14 @@ func (m *SettingsModel) renderLanguageSelection() string {
 
 		if i == m.cursor {
 
-			selectedStyle := lipgloss.NewStyle().
-				Foreground(styles.PastelLavender).
-				Background(lipgloss.Color("#4A4A6A")).
-				Bold(true).
-				Padding(0, 2)
+			selectedStyle := styles.SelectedListItemStyle
 
 			b.WriteString("→ ")
 			b.WriteString(selectedStyle.Render(fmt.Sprintf("● %s", label)))
 			b.WriteString(" ←")
 		} else {
 
-			unselectedStyle := lipgloss.NewStyle().
-				Foreground(styles.TextMuted)
+			unselectedStyle := styles.ListItemStyle
 
 			b.WriteString("  ")
 			b.WriteString(unselectedStyle.Render(fmt.Sprintf("○ %s", label)))
