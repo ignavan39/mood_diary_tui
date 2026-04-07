@@ -18,6 +18,7 @@ const (
 	ScreenHistory
 	ScreenEdit
 	ScreenSettings
+	ScreenCalendar
 )
 
 type Model struct {
@@ -31,6 +32,7 @@ type Model struct {
 	historyModel  *HistoryModel
 	editModel     *EditModel
 	settingsModel *SettingsModel
+	calendarModel *CalendarModel
 
 	translator   i18n.Translator
 	settingsRepo repository.SettingsRepository
@@ -60,7 +62,7 @@ func NewModel(
 	m.historyModel = NewHistoryModel(service, translator)
 	m.editModel = NewEditModel(service, translator)
 	m.settingsModel = NewSettingsModel(translator, settingsRepo)
-
+	m.calendarModel = NewCalendarModel(service, translator)
 	return m
 }
 
@@ -103,7 +105,24 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.currentScreen = ScreenEdit
 		m.editModel.SetEntry(msg.Entry)
+	case CalendarDateSelectedMsg:
 
+		return m, nil
+
+	case NavigateToNewEntryMsg:
+
+		m.recordModel = NewRecordModel(m.service, m.translator)
+		m.currentScreen = ScreenRecord
+		return m, nil
+
+	case NavigateToDeleteMsg:
+
+		_ = m.service.DeleteMood(m.ctx, msg.Entry.Date)
+
+		if m.currentScreen == ScreenCalendar {
+			return m, m.calendarModel.loadMonthData()
+		}
+		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -137,6 +156,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var settingsModel tea.Model
 		settingsModel, cmd = m.settingsModel.Update(msg)
 		m.settingsModel = settingsModel.(*SettingsModel)
+
+	case ScreenCalendar:
+		var calendarModel tea.Model
+		calendarModel, cmd = m.calendarModel.Update(msg)
+		m.calendarModel = calendarModel.(*CalendarModel)
 	}
 	if cmd != nil {
 		cmds = append(cmds, cmd)
@@ -169,6 +193,9 @@ func (m *Model) initCurrentScreen() tea.Cmd {
 	case ScreenSettings:
 		m.settingsModel = NewSettingsModel(m.translator, m.settingsRepo)
 		return m.settingsModel.Init()
+	case ScreenCalendar:
+		m.calendarModel = NewCalendarModel(m.service, m.translator)
+		return m.calendarModel.Init()
 	}
 	return nil
 }
@@ -187,6 +214,8 @@ func (m *Model) View() string {
 		return m.editModel.View()
 	case ScreenSettings:
 		return m.settingsModel.View()
+	case ScreenCalendar:
+		return m.calendarModel.View()
 	default:
 		return "Unknown screen"
 	}

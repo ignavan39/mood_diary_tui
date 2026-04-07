@@ -32,6 +32,7 @@ func (m *MenuModel) getChoices() []string {
 		m.translator.T("menu.item_record"),
 		m.translator.T("menu.item_stats"),
 		m.translator.T("menu.item_history"),
+		m.translator.T("menu.item_calendar"),
 		m.translator.T("menu.item_settings"),
 		m.translator.T("menu.item_exit"),
 	}
@@ -74,8 +75,10 @@ func (m *MenuModel) handleSelection() tea.Cmd {
 	case 2:
 		return Navigate(ScreenHistory)
 	case 3:
-		return Navigate(ScreenSettings)
+		return Navigate(ScreenCalendar)
 	case 4:
+		return Navigate(ScreenSettings)
+	case 5:
 		return tea.Quit
 	}
 	return nil
