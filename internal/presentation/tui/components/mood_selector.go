@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type MoodSelector struct {
@@ -65,7 +66,7 @@ func (m *MoodSelector) Update(msg tea.Msg) tea.Cmd {
 				m.SetValue(m.value + 1)
 			}
 		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
-			// Прямой ввод числа
+
 			if len(keyMsg.Runes) > 0 {
 				digit := int(keyMsg.Runes[0] - '0')
 				if digit >= m.min && digit <= m.max {
@@ -80,22 +81,6 @@ func (m *MoodSelector) Update(msg tea.Msg) tea.Cmd {
 func (m *MoodSelector) View() string {
 	level := entity.MoodLevel(m.value)
 
-	// Цветовая палитра от красного к зеленому
-	colors := []lipgloss.Color{
-		lipgloss.Color("#FF6B6B"), // 0 - очень плохо
-		lipgloss.Color("#FF8E8E"),
-		lipgloss.Color("#FFB3B3"),
-		lipgloss.Color("#FFD4A3"),
-		lipgloss.Color("#FFEB9C"),
-		lipgloss.Color("#FFFFBA"), // 5 - нейтрально
-		lipgloss.Color("#E8FFC4"),
-		lipgloss.Color("#C4FFCF"),
-		lipgloss.Color("#9BFFAB"),
-		lipgloss.Color("#6BFFB8"),
-		lipgloss.Color("#51CF66"), // 10 - отлично
-	}
-
-	// Визуальная шкала
 	var scale string
 	for i := m.min; i <= m.max; i++ {
 		style := lipgloss.NewStyle().
@@ -104,26 +89,25 @@ func (m *MoodSelector) View() string {
 			Padding(0, 1)
 
 		if i == m.value {
-			// Активный элемент
+
 			style = style.
-				Background(colors[i]).
-				Foreground(lipgloss.Color("#FFFFFF")).
+				Background(styles.MoodColors[i]).
+				Foreground(styles.TextLight).
 				Bold(true)
 		} else {
-			// Неактивный элемент
+
 			style = style.
-				Foreground(colors[i])
+				Foreground(styles.MoodColors[i])
 		}
 
 		scale += style.Render(fmt.Sprintf("%d", i))
 	}
 
-	// Эмоджи и описание
 	emoji := level.Emoji()
 	description := level.String()
 
 	currentStyle := lipgloss.NewStyle().
-		Foreground(colors[m.value]).
+		Foreground(styles.MoodColors[m.value]).
 		Bold(true).
 		Align(lipgloss.Center).
 		Width(55)
@@ -132,9 +116,8 @@ func (m *MoodSelector) View() string {
 		fmt.Sprintf("%s  %s  (%d/10)", emoji, description, m.value),
 	)
 
-	// Хинт
 	hint := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9B9B9B")).
+		Foreground(styles.TextMuted).
 		Align(lipgloss.Center).
 		Width(55).
 		Render("← / → для изменения, 0-9 для прямого ввода")

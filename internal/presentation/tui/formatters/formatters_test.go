@@ -15,7 +15,6 @@ func TestFormatMoodLevel(t *testing.T) {
 		t.Error("FormatMoodLevel should not return empty string")
 	}
 
-	// Проверяем что результат содержит основные элементы
 	if len(result) < 5 {
 		t.Error("FormatMoodLevel should return meaningful string")
 	}
@@ -72,8 +71,8 @@ func TestGetMoodEmoji(t *testing.T) {
 		{0, true},
 		{5, true},
 		{10, true},
-		{-1, true}, // Возвращает "❓"
-		{11, true}, // Возвращает "❓"
+		{-1, true},
+		{11, true},
 	}
 
 	for _, tt := range tests {

@@ -74,7 +74,7 @@ func (s *CalendarScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 		return s, nil
 
 	case state.MoodDeletedMsg:
-		// Перезагрузить данные после удаления
+
 		s.SetLoading(true)
 		return s, s.loadMonthData()
 	}
@@ -94,16 +94,16 @@ func (s *CalendarScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 		return s, s.moveCursor(7)
 
 	case "n":
-		// Создать новую запись на выбранную дату
+
 		return s, state.NavigateToMoodForm(s.selectedDate, nil)
 
 	case "e", "enter":
-		// Редактировать или создать
+
 		entry := s.moodData[s.selectedDate]
 		return s, state.NavigateToMoodForm(s.selectedDate, entry)
 
 	case "d":
-		// Удалить запись
+
 		entry := s.moodData[s.selectedDate]
 		if entry != nil {
 			return s, s.deleteMood(entry)
@@ -119,7 +119,6 @@ func (s *CalendarScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 func (s *CalendarScreen) moveCursor(deltaDays int) tea.Cmd {
 	newDate := s.selectedDate.AddDate(0, 0, deltaDays)
 
-	// Проверяем, нужно ли сменить месяц
 	if newDate.Year() != s.currentMonth.Year() || newDate.Month() != s.currentMonth.Month() {
 		s.currentMonth = time.Date(newDate.Year(), newDate.Month(), 1, 0, 0, 0, 0, time.UTC)
 		s.selectedDate = newDate
@@ -197,25 +196,21 @@ func (s *CalendarScreen) deleteMood(entry *entity.MoodEntry) tea.Cmd {
 func (s *CalendarScreen) View() string {
 	var b strings.Builder
 
-	// Заголовок с месяцем и годом
 	monthName := s.t(fmt.Sprintf("date.month.%d", s.currentMonth.Month()))
 	header := styles.HeaderStyle.Render(fmt.Sprintf("📅 %s %d", monthName, s.currentMonth.Year()))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
-	// Ошибка
 	if s.Error != nil {
 		b.WriteString(styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error()))
 		b.WriteString("\n\n")
 	}
 
-	// Загрузка
 	if s.Loading {
 		b.WriteString(styles.InfoStyle.Render(s.t("common.loading")))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
-	// Дни недели
 	weekdaysOrder := []time.Weekday{
 		time.Monday, time.Tuesday, time.Wednesday, time.Thursday,
 		time.Friday, time.Saturday, time.Sunday,
@@ -229,21 +224,19 @@ func (s *CalendarScreen) View() string {
 	b.WriteString("\n")
 	b.WriteString(strings.Repeat("─", 42) + "\n")
 
-	// Календарная сетка
 	rows := s.buildCalendarGrid()
 	for i, row := range rows {
 		line := ""
 		for j, cell := range row {
 			style := lipgloss.NewStyle().Width(6).Align(lipgloss.Center)
 
-			// Выделяем текущую выбранную дату
 			if i == s.cursorRow && j == s.cursorCol {
 				style = style.Background(styles.PastelLavender).Foreground(styles.TextLight).Bold(true)
 			} else if entry, ok := s.moodData[cell.date]; ok {
-				// Окрашиваем даты с записями
+
 				style = style.Foreground(styles.GetMoodColor(int(entry.Level)))
 			} else if cell.date.Month() != s.currentMonth.Month() {
-				// Даты вне текущего месяца
+
 				style = style.Foreground(styles.TextMuted)
 			}
 
@@ -252,10 +245,8 @@ func (s *CalendarScreen) View() string {
 		b.WriteString(line + "\n")
 	}
 
-	// Футер с информацией о выбранной дате
 	b.WriteString("\n" + styles.FooterStyle.Render(s.renderFooter()))
 
-	// Справка
 	b.WriteString("\n" + styles.HelpStyle.Render(s.t("help.navigation.calendar")))
 
 	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())

@@ -218,6 +218,9 @@ func (r *SQLiteMoodRepository) FindAll(ctx context.Context) ([]*entity.MoodEntry
 }
 
 func (r *SQLiteMoodRepository) GetStatistics(ctx context.Context, start, end time.Time) (*repository.MoodStatistics, error) {
+	stats := repository.NewMoodStatistics()
+	stats.StartDate = start
+	stats.EndDate = end
 
 	query := `
 		SELECT 
@@ -228,18 +231,11 @@ func (r *SQLiteMoodRepository) GetStatistics(ctx context.Context, start, end tim
 		FROM mood_entries
 		WHERE date BETWEEN ? AND ?
 	`
-
 	startStr := start.Format("2006-01-02")
 	endStr := end.Format("2006-01-02")
 
-	var (
-		total   int
-		average float64
-		minLvl  int
-		maxLvl  int
-	)
-
-	err := r.db.QueryRowContext(ctx, query, startStr, endStr).Scan(&total, &average, &minLvl, &maxLvl)
+	err := r.db.QueryRowContext(ctx, query, startStr, endStr).
+		Scan(&stats.Count, &stats.Average, &stats.MinLevel, &stats.MaxLevel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get statistics: %w", err)
 	}
@@ -250,37 +246,25 @@ func (r *SQLiteMoodRepository) GetStatistics(ctx context.Context, start, end tim
 		WHERE date BETWEEN ? AND ?
 		GROUP BY level
 	`
-
 	rows, err := r.db.QueryContext(ctx, countQuery, startStr, endStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get mood counts: %w", err)
 	}
 	defer rows.Close()
 
-	moodCounts := make(map[entity.MoodLevel]int)
 	for rows.Next() {
-		var level int
-		var count int
+		var level, count int
 		if err := rows.Scan(&level, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan mood count: %w", err)
+			continue
 		}
-		ml, _ := entity.NewMoodLevel(level)
-		moodCounts[ml] = count
+		stats.Distribution[level] = count
 	}
 
-	trend := r.calculateTrend(ctx, start, end)
+	stats.TotalDays = int(end.Sub(start).Hours()/24) + 1
 
-	minMood, _ := entity.NewMoodLevel(minLvl)
-	maxMood, _ := entity.NewMoodLevel(maxLvl)
+	stats.Trend = r.calculateTrend(ctx, start, end)
 
-	return &repository.MoodStatistics{
-		TotalEntries: total,
-		AverageMood:  average,
-		MinMood:      minMood,
-		MaxMood:      maxMood,
-		MoodCounts:   moodCounts,
-		Trend:        trend,
-	}, nil
+	return stats, nil
 }
 
 func (r *SQLiteMoodRepository) calculateTrend(ctx context.Context, start, end time.Time) float64 {

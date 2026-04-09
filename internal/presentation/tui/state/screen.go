@@ -2,14 +2,12 @@ package state
 
 import tea "github.com/charmbracelet/bubbletea"
 
-// Screen представляет любой экран в приложении
 type Screen interface {
 	Init() tea.Cmd
 	Update(tea.Msg) (Screen, tea.Cmd)
 	View() string
 }
 
-// BaseState содержит общее состояние для всех экранов
 type BaseState struct {
 	Loading bool
 	Error   error

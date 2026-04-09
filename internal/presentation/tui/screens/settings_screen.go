@@ -58,7 +58,7 @@ func (s *SettingsScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 		return s, nil
 
 	case settingsSavedMsg:
-		// Можно показать уведомление об успешном сохранении
+
 		s.SetLoading(false)
 		return s, nil
 
@@ -83,7 +83,7 @@ func (s *SettingsScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 		}
 
 	case "enter", " ":
-		// Выбрать язык
+
 		selectedLocale := s.locales[s.cursor]
 		if selectedLocale != s.currentLocale {
 			s.SetLoading(true)
@@ -136,7 +136,7 @@ func (s *SettingsScreen) saveLocale(locale string) tea.Cmd {
 }
 
 func (s *SettingsScreen) View() string {
-	// Заголовок
+
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(styles.PastelLavender).
@@ -145,7 +145,6 @@ func (s *SettingsScreen) View() string {
 
 	header := headerStyle.Render("⚙️  " + s.t("settings.title"))
 
-	// Загрузка
 	if s.Loading {
 		loadingStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFB3BA")).
@@ -161,7 +160,6 @@ func (s *SettingsScreen) View() string {
 		)
 	}
 
-	// Языки
 	languageLabel := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#9B9B9B")).
@@ -183,7 +181,6 @@ func (s *SettingsScreen) View() string {
 		localeItems += itemStyle.Render(localeLabel) + "\n"
 	}
 
-	// Справка
 	helpStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#9B9B9B")).
 		Align(lipgloss.Center).

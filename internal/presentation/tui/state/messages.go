@@ -8,7 +8,6 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
 )
 
-// ScreenType определяет тип экрана
 type ScreenType int
 
 const (
@@ -20,7 +19,6 @@ const (
 	ScreenSettings
 )
 
-// NavigateMsg - унифицированное сообщение для навигации
 type NavigateMsg struct {
 	To     ScreenType
 	Params interface{}
@@ -32,11 +30,9 @@ func Navigate(to ScreenType, params interface{}) tea.Cmd {
 	}
 }
 
-// Параметры для различных экранов
-
 type MoodFormParams struct {
 	Date  time.Time
-	Entry *entity.MoodEntry // nil = create, filled = edit
+	Entry *entity.MoodEntry
 }
 
 type CalendarParams struct {
@@ -46,8 +42,6 @@ type CalendarParams struct {
 type StatsParams struct {
 	Period string
 }
-
-// Сообщения результатов операций
 
 type MoodSavedMsg struct {
 	Entry *entity.MoodEntry
@@ -70,7 +64,6 @@ func (m DataLoadedMsg) GetError() error {
 	return m.Error
 }
 
-// Сообщения для календаря
 type CalendarDataLoadedMsg struct {
 	Data map[time.Time]*entity.MoodEntry
 }
@@ -79,30 +72,24 @@ type CalendarDateSelectedMsg struct {
 	Date time.Time
 }
 
-// Сообщения для истории
 type HistoryLoadedMsg struct {
 	Entries []*entity.MoodEntry
 }
 
-// Сообщения для статистики
 type StatsLoadedMsg struct {
 	Stats   *repository.MoodStatistics
 	Entries []*entity.MoodEntry
 }
 
-// Общие сообщения ошибок
 type ErrorMsg struct {
 	Error error
 }
 
-// Сообщение для подтверждения действия
 type ConfirmActionMsg struct {
 	Action    string
 	OnConfirm tea.Cmd
 	OnCancel  tea.Cmd
 }
-
-// Вспомогательные функции для создания сообщений
 
 func NavigateToMenu() tea.Cmd {
 	return Navigate(ScreenMenu, nil)

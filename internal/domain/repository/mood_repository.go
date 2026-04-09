@@ -29,10 +29,19 @@ type MoodRepository interface {
 }
 
 type MoodStatistics struct {
-	TotalEntries int
-	AverageMood  float64
-	MinMood      entity.MoodLevel
-	MaxMood      entity.MoodLevel
-	MoodCounts   map[entity.MoodLevel]int
+	Count        int
+	Average      float64
+	MinLevel     int
+	MaxLevel     int
+	TotalDays    int
+	Distribution map[int]int
 	Trend        float64
+	StartDate    time.Time
+	EndDate      time.Time
+}
+
+func NewMoodStatistics() *MoodStatistics {
+	return &MoodStatistics{
+		Distribution: make(map[int]int),
+	}
 }

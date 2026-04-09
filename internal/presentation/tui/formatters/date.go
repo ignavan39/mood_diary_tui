@@ -5,29 +5,25 @@ import (
 	"time"
 )
 
-// FormatDate форматирует дату в стандартный формат
 func FormatDate(t time.Time) string {
 	return t.Format("02.01.2006")
 }
 
-// FormatDateTime форматирует дату и время
 func FormatDateTime(t time.Time) string {
 	return t.Format("02.01.2006 15:04")
 }
 
-// FormatDateRange форматирует диапазон дат
 func FormatDateRange(start, end time.Time) string {
 	return fmt.Sprintf("%s — %s", FormatDate(start), FormatDate(end))
 }
 
-// FormatRelativeDate форматирует дату относительно текущего дня
 func FormatRelativeDate(t time.Time) string {
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	date := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
-	
+
 	diff := today.Sub(date).Hours() / 24
-	
+
 	switch {
 	case diff == 0:
 		return "Сегодня"
@@ -44,11 +40,10 @@ func FormatRelativeDate(t time.Time) string {
 	}
 }
 
-// DaysAgo возвращает количество дней от указанной даты до сегодня
 func DaysAgo(t time.Time) int {
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	date := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
-	
+
 	return int(today.Sub(date).Hours() / 24)
 }

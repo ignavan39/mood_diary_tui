@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
 type LoadingIndicator struct {
@@ -45,13 +46,12 @@ func (l *LoadingIndicator) View() string {
 	spinner := l.frames[l.spinner]
 
 	style := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFB3BA")).
+		Foreground(styles.PastelPink).
 		Padding(2, 0)
 
 	return style.Render(spinner + " " + l.message)
 }
 
-// SuccessMessage - компонент для отображения успешного действия
 type SuccessMessage struct {
 	message string
 }
@@ -62,14 +62,14 @@ func NewSuccess(message string) *SuccessMessage {
 
 func (s *SuccessMessage) View() string {
 	style := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#51CF66")).
+		Foreground(styles.TextDark).
+		Background(styles.SuccessGreen).
 		Bold(true).
 		Padding(2, 0)
 
 	return style.Render("✓ " + s.message)
 }
 
-// ErrorMessage - компонент для отображения ошибки
 type ErrorMessage struct {
 	message string
 }
@@ -80,7 +80,8 @@ func NewError(message string) *ErrorMessage {
 
 func (e *ErrorMessage) View() string {
 	style := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF6B6B")).
+		Foreground(styles.TextDark).
+		Background(styles.ErrorRed).
 		Bold(true).
 		Padding(1, 0)
 

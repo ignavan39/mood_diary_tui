@@ -64,7 +64,7 @@ func (s *HistoryScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 		return s, nil
 
 	case state.MoodDeletedMsg:
-		// Перезагрузить после удаления
+
 		s.SetLoading(true)
 		return s, s.loadEntries()
 	}
@@ -85,14 +85,14 @@ func (s *HistoryScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 		}
 
 	case "enter", "e":
-		// Редактировать выбранную запись
+
 		if len(s.entries) > 0 && s.cursor < len(s.entries) {
 			entry := s.entries[s.cursor]
 			return s, state.NavigateToMoodForm(entry.Date, entry)
 		}
 
 	case "d":
-		// Удалить запись
+
 		if len(s.entries) > 0 && s.cursor < len(s.entries) {
 			entry := s.entries[s.cursor]
 			return s, s.deleteMood(entry)
@@ -130,7 +130,7 @@ func (s *HistoryScreen) deleteMood(entry *entity.MoodEntry) tea.Cmd {
 }
 
 func (s *HistoryScreen) View() string {
-	// Заголовок
+
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(styles.PastelLavender).
@@ -139,7 +139,6 @@ func (s *HistoryScreen) View() string {
 
 	header := headerStyle.Render("📜 " + s.t("history.title"))
 
-	// Загрузка
 	if s.Loading {
 		loading := components.NewLoading(s.t("common.loading"))
 		return lipgloss.JoinVertical(
@@ -150,7 +149,6 @@ func (s *HistoryScreen) View() string {
 		)
 	}
 
-	// Ошибка
 	if s.Error != nil {
 		errorMsg := components.NewError(s.Error.Error())
 		return lipgloss.JoinVertical(
@@ -161,7 +159,6 @@ func (s *HistoryScreen) View() string {
 		)
 	}
 
-	// Нет записей
 	if len(s.entries) == 0 {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#9B9B9B")).
@@ -177,7 +174,6 @@ func (s *HistoryScreen) View() string {
 		)
 	}
 
-	// Список записей
 	var listContent string
 	for i, entry := range s.entries {
 		itemStyle := styles.ListItemStyle.Copy()
@@ -194,7 +190,6 @@ func (s *HistoryScreen) View() string {
 		listContent += itemStyle.Render(line) + "\n"
 	}
 
-	// Справка
 	helpStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#9B9B9B")).
 		Align(lipgloss.Center).

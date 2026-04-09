@@ -12,21 +12,17 @@ import (
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
-// Model - главный координатор приложения
 type Model struct {
 	ctx          context.Context
 	service      *usecase.MoodService
 	translator   i18n.Translator
 	settingsRepo repository.SettingsRepository
 
-	// Текущий экран
 	current     state.Screen
 	currentType state.ScreenType
 
-	// Навигационный стек для "back"
 	history []state.ScreenType
 
-	// Размеры окна
 	width  int
 	height int
 }
@@ -45,7 +41,6 @@ func NewModel(
 		currentType:  state.ScreenMenu,
 	}
 
-	// Инициализируем меню
 	m.current = screens.NewMenuScreen(translator)
 
 	return m
@@ -60,30 +55,28 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		// Передаем размер текущему экрану
+
 		var cmd tea.Cmd
 		m.current, cmd = m.current.Update(msg)
 		return m, cmd
 
 	case tea.KeyMsg:
-		// Глобальные хоткеи
+
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
 
-		// Back navigation (q или esc на главном меню = выход)
 		if msg.String() == "q" || msg.String() == "esc" {
 			if m.currentType == state.ScreenMenu {
 				return m, tea.Quit
 			}
-			// Остальные экраны обрабатывают q/esc сами для навигации в меню
+
 		}
 
 	case state.NavigateMsg:
 		return m, m.navigate(msg.To, msg.Params)
 	}
 
-	// Делегируем текущему экрану
 	var cmd tea.Cmd
 	m.current, cmd = m.current.Update(msg)
 
@@ -95,13 +88,12 @@ func (m *Model) View() string {
 }
 
 func (m *Model) navigate(to state.ScreenType, params interface{}) tea.Cmd {
-	// Сохраняем в историю (кроме повторной навигации на тот же экран)
+
 	if to != m.currentType {
 		m.history = append(m.history, m.currentType)
 	}
 	m.currentType = to
 
-	// Создаем новый экран
 	switch to {
 	case state.ScreenMenu:
 		m.current = screens.NewMenuScreen(m.translator)
@@ -122,8 +114,8 @@ func (m *Model) navigate(to state.ScreenType, params interface{}) tea.Cmd {
 	case state.ScreenHistory:
 		m.current = screens.NewHistoryScreen(m.service, m.translator)
 
-	// case state.ScreenStats:
-	// 	m.current = screens.NewStatsScreen(m.service, m.translator)
+	case state.ScreenStats:
+		m.current = screens.NewStatsScreen(m.service, m.translator)
 
 	case state.ScreenSettings:
 		m.current = screens.NewSettingsScreen(m.translator, m.settingsRepo)
@@ -137,7 +129,6 @@ func (m *Model) navigateBack() tea.Cmd {
 		return state.Navigate(state.ScreenMenu, nil)
 	}
 
-	// Pop из истории
 	previous := m.history[len(m.history)-1]
 	m.history = m.history[:len(m.history)-1]
 
