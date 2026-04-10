@@ -24,18 +24,14 @@ type MoodFormScreen struct {
 	service    *usecase.MoodService
 	translator i18n.Translator
 
-	// Данные формы
 	date  time.Time
-	entry *entity.MoodEntry // nil = create mode
+	entry *entity.MoodEntry
 
-	// UI компоненты
 	wizard *forms.Wizard
 
-	// Данные из шагов
 	moodLevel int
 	note      string
 
-	// Состояние
 	saved  bool
 	saving bool
 }
@@ -53,7 +49,6 @@ func NewMoodFormScreen(
 		entry:      entry,
 	}
 
-	// Создаем шаги визарда
 	steps := []forms.Step{
 		NewMoodLevelStep(screen),
 		NewMoodNoteStep(screen),
@@ -85,7 +80,7 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 	case state.MoodSavedMsg:
 		s.saved = true
 		s.saving = false
-		// Автоматический возврат через 1.5 секунды
+
 		return s, tea.Tick(1500*time.Millisecond, func(t time.Time) tea.Msg {
 			return state.NavigateMsg{To: state.ScreenMenu}
 		})
@@ -96,10 +91,8 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 		return s, nil
 	}
 
-	// Делегируем визарду
 	cmd := s.wizard.Update(msg)
 
-	// Проверяем завершение
 	if s.wizard.IsComplete() && !s.saving {
 		s.saving = true
 		return s, s.save()
@@ -115,7 +108,6 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 func (s *MoodFormScreen) View() string {
 	var b strings.Builder
 
-	// Заголовок
 	headerKey := "record.title_new"
 	if s.entry != nil {
 		headerKey = "record.title_edit"
@@ -124,7 +116,6 @@ func (s *MoodFormScreen) View() string {
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
-	// Успешное сохранение
 	if s.saved {
 		successKey := "record.success_new"
 		if s.entry != nil {
@@ -137,20 +128,17 @@ func (s *MoodFormScreen) View() string {
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
-	// Процесс сохранения
 	if s.saving {
 		b.WriteString(styles.InfoStyle.Render(s.t("record.saving")))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
-	// Ошибка
 	if s.Error != nil {
 		errMsg := styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error())
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
 
-	// Контент визарда
 	wizardContent := s.wizard.View()
 	b.WriteString(wizardContent)
 
@@ -163,10 +151,10 @@ func (s *MoodFormScreen) save() tea.Cmd {
 
 		var err error
 		if s.entry != nil {
-			// Update mode
+
 			err = s.service.UpdateMood(ctx, s.date, s.moodLevel, s.note)
 		} else {
-			// Create mode
+
 			err = s.service.RecordMood(ctx, s.moodLevel, s.note, &s.date)
 		}
 
@@ -178,11 +166,6 @@ func (s *MoodFormScreen) save() tea.Cmd {
 	}
 }
 
-// ============================================================================
-// WIZARD STEPS - Шаги для формы настроения
-// ============================================================================
-
-// Шаг 1: Выбор уровня настроения
 type MoodLevelStep struct {
 	screen *MoodFormScreen
 }
@@ -193,7 +176,6 @@ func NewMoodLevelStep(screen *MoodFormScreen) *MoodLevelStep {
 		initial = screen.entry.Level.Int()
 	}
 
-	// Устанавливаем начальное значение
 	screen.moodLevel = initial
 
 	return &MoodLevelStep{
@@ -207,11 +189,9 @@ func (s *MoodLevelStep) Render(width, height int) string {
 	b.WriteString(styles.SubtitleStyle.Render(s.screen.t("record.prompt_feeling")))
 	b.WriteString("\n\n")
 
-	// Шкала настроения
 	b.WriteString(s.renderMoodScale())
 	b.WriteString("\n\n")
 
-	// Текущее значение
 	moodLevel := entity.MoodLevel(s.screen.moodLevel)
 	desc := s.screen.t(moodLevel.StringKey())
 	current := fmt.Sprintf("%s %s (%d/10)", moodLevel.Emoji(), desc, s.screen.moodLevel)
@@ -280,7 +260,6 @@ func (s *MoodLevelStep) OnExit() tea.Cmd {
 	return nil
 }
 
-// Шаг 2: Ввод заметки
 type MoodNoteStep struct {
 	screen *MoodFormScreen
 	input  textinput.Model
@@ -326,7 +305,7 @@ func (s *MoodNoteStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
 }
 
 func (s *MoodNoteStep) Validate() error {
-	// Заметка опциональна, всегда валидна
+
 	return nil
 }
 
@@ -339,7 +318,6 @@ func (s *MoodNoteStep) OnExit() tea.Cmd {
 	return nil
 }
 
-// Шаг 3: Подтверждение
 type MoodConfirmationStep struct {
 	screen *MoodFormScreen
 }
@@ -394,12 +372,12 @@ func (s *MoodConfirmationStep) Render(width, height int) string {
 }
 
 func (s *MoodConfirmationStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
-	// Wizard обработает Tab и Esc
+
 	return s, nil
 }
 
 func (s *MoodConfirmationStep) Validate() error {
-	// Всегда валидно, просто показываем подтверждение
+
 	return nil
 }
 

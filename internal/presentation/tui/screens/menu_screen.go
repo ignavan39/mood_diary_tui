@@ -101,7 +101,6 @@ func (s *MenuScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 			choice := s.choices[s.cursor]
 			return s, state.Navigate(choice.screen, choice.params)
 
-		// Горячие клавиши
 		case "r":
 			return s, state.NavigateToMoodForm(time.Now(), nil)
 		case "c":
@@ -121,12 +120,10 @@ func (s *MenuScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 func (s *MenuScreen) View() string {
 	var b strings.Builder
 
-	// Красивый ASCII заголовок
 	header := styles.HeaderStyle.Render(s.renderHeader())
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
-	// Пункты меню
 	for i, choice := range s.choices {
 		cursor := "  "
 		choiceText := choice.label
