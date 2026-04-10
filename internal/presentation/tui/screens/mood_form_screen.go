@@ -3,6 +3,7 @@ package screens
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -13,7 +14,6 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
-	"github.com/ignavan39/mood-diary/internal/presentation/tui/components"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/forms"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
@@ -24,14 +24,18 @@ type MoodFormScreen struct {
 	service    *usecase.MoodService
 	translator i18n.Translator
 
+	// Данные формы
 	date  time.Time
-	entry *entity.MoodEntry
+	entry *entity.MoodEntry // nil = create mode
 
+	// UI компоненты
 	wizard *forms.Wizard
 
+	// Данные из шагов
 	moodLevel int
 	note      string
 
+	// Состояние
 	saved  bool
 	saving bool
 }
@@ -49,6 +53,7 @@ func NewMoodFormScreen(
 		entry:      entry,
 	}
 
+	// Создаем шаги визарда
 	steps := []forms.Step{
 		NewMoodLevelStep(screen),
 		NewMoodNoteStep(screen),
@@ -80,7 +85,7 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 	case state.MoodSavedMsg:
 		s.saved = true
 		s.saving = false
-
+		// Автоматический возврат через 1.5 секунды
 		return s, tea.Tick(1500*time.Millisecond, func(t time.Time) tea.Msg {
 			return state.NavigateMsg{To: state.ScreenMenu}
 		})
@@ -91,8 +96,10 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 		return s, nil
 	}
 
+	// Делегируем визарду
 	cmd := s.wizard.Update(msg)
 
+	// Проверяем завершение
 	if s.wizard.IsComplete() && !s.saving {
 		s.saving = true
 		return s, s.save()
@@ -106,52 +113,48 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 }
 
 func (s *MoodFormScreen) View() string {
+	var b strings.Builder
 
-	if s.saved {
-		return components.NewSuccess(s.t("record.success")).View()
-	}
-
-	if s.saving {
-		loading := components.NewLoading(s.t("common.saving"))
-		return loading.View()
-	}
-
-	var title string
+	// Заголовок
+	headerKey := "record.title_new"
 	if s.entry != nil {
-		title = "✏️  " + s.t("edit.title")
-	} else {
-		title = "📝 " + s.t("record.title")
+		headerKey = "record.title_edit"
+	}
+	header := styles.HeaderStyle.Render(s.t(headerKey))
+	b.WriteString(header)
+	b.WriteString("\n\n")
+
+	// Успешное сохранение
+	if s.saved {
+		successKey := "record.success_new"
+		if s.entry != nil {
+			successKey = "record.success_edit"
+		}
+		success := styles.SuccessStyle.Render(s.t(successKey))
+		b.WriteString(success)
+		b.WriteString("\n\n")
+		b.WriteString(styles.HelpStyle.Render(s.t("common.returning")))
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
-	header := styles.TitleStyle.Render(title)
+	// Процесс сохранения
+	if s.saving {
+		b.WriteString(styles.InfoStyle.Render(s.t("record.saving")))
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+	}
 
-	dateStr := styles.SubtitleStyle.Render(s.date.Format("02.01.2006"))
-
-	wizardContent := s.wizard.View()
-
-	var errorView string
+	// Ошибка
 	if s.Error != nil {
-		errorView = components.NewError(s.Error.Error()).View()
+		errMsg := styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error())
+		b.WriteString(errMsg)
+		b.WriteString("\n\n")
 	}
 
-	help := styles.HelpStyle.Render(s.t("help.wizard"))
+	// Контент визарда
+	wizardContent := s.wizard.View()
+	b.WriteString(wizardContent)
 
-	content := lipgloss.JoinVertical(
-		lipgloss.Center,
-		header,
-		dateStr,
-		"",
-		wizardContent,
-		errorView,
-		"",
-		help,
-	)
-
-	return lipgloss.NewStyle().
-		Width(s.Width).
-		Height(s.Height).
-		Align(lipgloss.Center, lipgloss.Center).
-		Render(content)
+	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 }
 
 func (s *MoodFormScreen) save() tea.Cmd {
@@ -160,10 +163,10 @@ func (s *MoodFormScreen) save() tea.Cmd {
 
 		var err error
 		if s.entry != nil {
-
+			// Update mode
 			err = s.service.UpdateMood(ctx, s.date, s.moodLevel, s.note)
 		} else {
-
+			// Create mode
 			err = s.service.RecordMood(ctx, s.moodLevel, s.note, &s.date)
 		}
 
@@ -175,9 +178,13 @@ func (s *MoodFormScreen) save() tea.Cmd {
 	}
 }
 
+// ============================================================================
+// WIZARD STEPS - Шаги для формы настроения
+// ============================================================================
+
+// Шаг 1: Выбор уровня настроения
 type MoodLevelStep struct {
-	screen   *MoodFormScreen
-	selector *components.MoodSelector
+	screen *MoodFormScreen
 }
 
 func NewMoodLevelStep(screen *MoodFormScreen) *MoodLevelStep {
@@ -186,64 +193,94 @@ func NewMoodLevelStep(screen *MoodFormScreen) *MoodLevelStep {
 		initial = screen.entry.Level.Int()
 	}
 
-	step := &MoodLevelStep{
-		screen:   screen,
-		selector: components.NewMoodSelector(initial),
-	}
-
-	step.selector.OnChange(func(value int) {
-		screen.moodLevel = value
-	})
-
+	// Устанавливаем начальное значение
 	screen.moodLevel = initial
 
-	return step
+	return &MoodLevelStep{
+		screen: screen,
+	}
 }
 
 func (s *MoodLevelStep) Render(width, height int) string {
-	prompt := s.screen.t("record.prompt_level")
+	var b strings.Builder
 
-	promptStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(styles.PastelPink).
-		Align(lipgloss.Center).
-		Width(width)
+	b.WriteString(styles.SubtitleStyle.Render(s.screen.t("record.prompt_feeling")))
+	b.WriteString("\n\n")
 
-	return lipgloss.JoinVertical(
-		lipgloss.Center,
-		promptStyle.Render(prompt),
-		"",
-		s.selector.View(),
-	)
+	// Шкала настроения
+	b.WriteString(s.renderMoodScale())
+	b.WriteString("\n\n")
+
+	// Текущее значение
+	moodLevel := entity.MoodLevel(s.screen.moodLevel)
+	desc := s.screen.t(moodLevel.StringKey())
+	current := fmt.Sprintf("%s %s (%d/10)", moodLevel.Emoji(), desc, s.screen.moodLevel)
+	currentStyle := styles.MoodStyle(s.screen.moodLevel)
+	b.WriteString(currentStyle.Render(current))
+	b.WriteString("\n\n")
+
+	help := styles.HelpStyle.Render(s.screen.t("help.navigation.record_step0"))
+	b.WriteString(help)
+
+	return b.String()
 }
 
-func (s *MoodLevelStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
+func (s *MoodLevelStep) renderMoodScale() string {
+	var parts []string
 
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		if keyMsg.String() == "enter" {
-			return s, nil
+	for i := 0; i <= 10; i++ {
+		moodLevel, _ := entity.NewMoodLevel(i)
+		emoji := moodLevel.Emoji()
+
+		if i == s.screen.moodLevel {
+			selectedStyle := lipgloss.NewStyle().
+				Foreground(styles.TextLight).
+				Background(styles.GetMoodColor(i)).
+				Bold(true)
+			selected := selectedStyle.Render("[ " + emoji + " ]")
+			parts = append(parts, selected)
+		} else {
+			unselectedStyle := lipgloss.NewStyle().
+				Foreground(styles.GetMoodColor(i)).
+				Faint(true).
+				Padding(0, 1).
+				Render(emoji)
+			parts = append(parts, unselectedStyle)
 		}
 	}
 
-	cmd := s.selector.Update(msg)
-	return s, cmd
+	return lipgloss.JoinHorizontal(lipgloss.Center, parts...)
+}
+
+func (s *MoodLevelStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "left", "h":
+			if s.screen.moodLevel > 0 {
+				s.screen.moodLevel--
+			}
+		case "right", "l":
+			if s.screen.moodLevel < 10 {
+				s.screen.moodLevel++
+			}
+		}
+	}
+	return s, nil
 }
 
 func (s *MoodLevelStep) Validate() error {
-
 	return nil
 }
 
 func (s *MoodLevelStep) OnEnter() tea.Cmd {
-	s.selector.Focus()
 	return nil
 }
 
 func (s *MoodLevelStep) OnExit() tea.Cmd {
-	s.selector.Blur()
 	return nil
 }
 
+// Шаг 2: Ввод заметки
 type MoodNoteStep struct {
 	screen *MoodFormScreen
 	input  textinput.Model
@@ -267,33 +304,18 @@ func NewMoodNoteStep(screen *MoodFormScreen) *MoodNoteStep {
 }
 
 func (s *MoodNoteStep) Render(width, height int) string {
-	prompt := s.screen.t("record.prompt_note_description")
+	var b strings.Builder
 
-	promptStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(styles.PastelMint).
-		Align(lipgloss.Center).
-		Width(width)
+	b.WriteString(styles.SubtitleStyle.Render(s.screen.t("record.prompt_note")))
+	b.WriteString("\n\n")
 
-	inputStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.PastelMint).
-		Padding(1, 2).
-		Width(width - 4).
-		Align(lipgloss.Center)
+	b.WriteString(s.input.View())
+	b.WriteString("\n\n")
 
-	counterStyle := lipgloss.NewStyle().
-		Foreground(styles.TextMuted).
-		Align(lipgloss.Center)
+	help := styles.HelpStyle.Render(s.screen.t("help.navigation.record_step1"))
+	b.WriteString(help)
 
-	return lipgloss.JoinVertical(
-		lipgloss.Center,
-		promptStyle.Render(prompt),
-		"",
-		inputStyle.Render(s.input.View()),
-		"",
-		counterStyle.Render(fmt.Sprintf("%d/%d символов", len(s.input.Value()), s.input.CharLimit)),
-	)
+	return b.String()
 }
 
 func (s *MoodNoteStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
@@ -304,7 +326,7 @@ func (s *MoodNoteStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
 }
 
 func (s *MoodNoteStep) Validate() error {
-
+	// Заметка опциональна, всегда валидна
 	return nil
 }
 
@@ -317,6 +339,7 @@ func (s *MoodNoteStep) OnExit() tea.Cmd {
 	return nil
 }
 
+// Шаг 3: Подтверждение
 type MoodConfirmationStep struct {
 	screen *MoodFormScreen
 }
@@ -328,54 +351,55 @@ func NewMoodConfirmationStep(screen *MoodFormScreen) *MoodConfirmationStep {
 }
 
 func (s *MoodConfirmationStep) Render(width, height int) string {
-	level := entity.MoodLevel(s.screen.moodLevel)
+	var b strings.Builder
 
-	title := styles.TitleStyle.Render(s.screen.t("record.confirm_title"))
+	confirmKey := "record.prompt_confirm_new"
+	if s.screen.entry != nil {
+		confirmKey = "record.prompt_confirm_edit"
+	}
+	b.WriteString(styles.SubtitleStyle.Render(s.screen.t(confirmKey)))
+	b.WriteString("\n\n")
 
-	dataStyle := styles.BoxStyle.Copy().Width(width - 4)
+	moodLevel := entity.MoodLevel(s.screen.moodLevel)
 
-	dateStr := s.screen.date.Format("02.01.2006")
-	moodStr := fmt.Sprintf("%s %s (%d/10)", level.Emoji(), level.String(), s.screen.moodLevel)
-
-	noteStr := s.screen.note
-	if noteStr == "" {
-		noteStr = s.screen.t("record.no_note")
+	note := s.screen.note
+	if note == "" {
+		note = s.screen.t("common.no_note")
 	}
 
-	data := lipgloss.JoinVertical(
-		lipgloss.Left,
-		lipgloss.NewStyle().Bold(true).Render(s.screen.t("record.date")+": ")+dateStr,
-		lipgloss.NewStyle().Bold(true).Render(s.screen.t("record.mood")+": ")+moodStr,
-		lipgloss.NewStyle().Bold(true).Render(s.screen.t("record.note")+": ")+noteStr,
-	)
+	desc := s.screen.t(moodLevel.StringKey())
 
-	saveBtn := styles.SelectedButtonStyle.Render("✓ " + s.screen.t("common.save") + " (Tab)")
-	cancelBtn := lipgloss.NewStyle().
-		Padding(0, 2).
-		Margin(0, 1).
-		Background(styles.ErrorRed).
-		Foreground(styles.TextLight).
-		Render("✗ " + s.screen.t("common.cancel") + " (Esc)")
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.GetMoodColor(s.screen.moodLevel)).
+		Padding(1, 2).
+		Render(fmt.Sprintf(
+			s.screen.t("record.box_mood")+"\n"+
+				s.screen.t("record.box_note")+"\n"+
+				s.screen.t("record.box_date"),
+			moodLevel.Emoji(),
+			desc,
+			s.screen.moodLevel,
+			note,
+			s.screen.date.Format("02.01.2006"),
+		))
 
-	buttons := lipgloss.JoinHorizontal(lipgloss.Center, saveBtn, cancelBtn)
+	b.WriteString(box)
+	b.WriteString("\n\n")
 
-	return lipgloss.JoinVertical(
-		lipgloss.Center,
-		title,
-		"",
-		dataStyle.Render(data),
-		"",
-		buttons,
-	)
+	help := styles.HelpStyle.Render(s.screen.t("help.navigation.record_step2"))
+	b.WriteString(help)
+
+	return b.String()
 }
 
 func (s *MoodConfirmationStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
-
+	// Wizard обработает Tab и Esc
 	return s, nil
 }
 
 func (s *MoodConfirmationStep) Validate() error {
-
+	// Всегда валидно, просто показываем подтверждение
 	return nil
 }
 

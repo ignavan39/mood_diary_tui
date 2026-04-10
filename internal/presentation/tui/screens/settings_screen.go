@@ -82,7 +82,7 @@ func (s *SettingsScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 			s.cursor++
 		}
 
-	case "enter", " ":
+	case "enter", "Enter", " ":
 
 		selectedLocale := s.locales[s.cursor]
 		if selectedLocale != s.currentLocale {

@@ -3,6 +3,7 @@ package screens
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -12,7 +13,145 @@ import (
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
-const moodDiaryBanner = `
+type MenuScreen struct {
+	state.BaseState
+
+	translator i18n.Translator
+	choices    []menuChoice
+	cursor     int
+}
+
+type menuChoice struct {
+	label  string
+	screen state.ScreenType
+	params interface{}
+	key    string
+}
+
+func NewMenuScreen(translator i18n.Translator) *MenuScreen {
+	s := &MenuScreen{
+		translator: translator,
+	}
+
+	s.choices = []menuChoice{
+		{
+			label:  s.t("menu.record"),
+			screen: state.ScreenMoodForm,
+			params: state.MoodFormParams{Date: time.Now(), Entry: nil},
+			key:    "r",
+		},
+		{
+			label:  s.t("menu.calendar"),
+			screen: state.ScreenCalendar,
+			params: state.CalendarParams{InitialDate: time.Now()},
+			key:    "c",
+		},
+		{
+			label:  s.t("menu.history"),
+			screen: state.ScreenHistory,
+			params: nil,
+			key:    "h",
+		},
+		{
+			label:  s.t("menu.stats"),
+			screen: state.ScreenStats,
+			params: state.StatsParams{Period: "month"},
+			key:    "s",
+		},
+		{
+			label:  s.t("menu.settings"),
+			screen: state.ScreenSettings,
+			params: nil,
+			key:    "o",
+		},
+	}
+
+	return s
+}
+
+func (s *MenuScreen) t(key string, args ...interface{}) string {
+	if s.translator == nil {
+		return key
+	}
+	return s.translator.T(key, args...)
+}
+
+func (s *MenuScreen) Init() tea.Cmd {
+	return nil
+}
+
+func (s *MenuScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		s.SetSize(msg.Width, msg.Height)
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if s.cursor > 0 {
+				s.cursor--
+			}
+
+		case "down", "j":
+			if s.cursor < len(s.choices)-1 {
+				s.cursor++
+			}
+
+		case "enter", " ":
+			choice := s.choices[s.cursor]
+			return s, state.Navigate(choice.screen, choice.params)
+
+		// Горячие клавиши
+		case "r":
+			return s, state.NavigateToMoodForm(time.Now(), nil)
+		case "c":
+			return s, state.NavigateToCalendar(time.Now())
+		case "h":
+			return s, state.NavigateToHistory()
+		case "s":
+			return s, state.NavigateToStats("month")
+		case "o":
+			return s, state.NavigateToSettings()
+		}
+	}
+
+	return s, nil
+}
+
+func (s *MenuScreen) View() string {
+	var b strings.Builder
+
+	// Красивый ASCII заголовок
+	header := styles.HeaderStyle.Render(s.renderHeader())
+	b.WriteString(header)
+	b.WriteString("\n\n")
+
+	// Пункты меню
+	for i, choice := range s.choices {
+		cursor := "  "
+		choiceText := choice.label
+		if choice.key != "" {
+			choiceText = choiceText + " (" + choice.key + ")"
+		}
+
+		if i == s.cursor {
+			cursor = "→ "
+			choiceText = styles.SelectedListItemStyle.Render(choiceText)
+		} else {
+			choiceText = styles.ListItemStyle.Render(choiceText)
+		}
+		b.WriteString(fmt.Sprintf("%s%s\n", cursor, choiceText))
+	}
+
+	b.WriteString("\n")
+	help := styles.HelpStyle.Render(s.t("help.navigation.menu"))
+	b.WriteString(help)
+
+	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+}
+
+func (s *MenuScreen) renderHeader() string {
+	title := `
  ███╗   ███╗ ██████╗  ██████╗ ██████╗     ██████╗ ██╗ █████╗ ██████╗ ██╗   ██╗
  ████╗ ████║██╔═══██╗██╔═══██╗██╔══██╗    ██╔══██╗██║██╔══██╗██╔══██╗╚██╗ ██╔╝
  ██╔████╔██║██║   ██║██║   ██║██║  ██║    ██║  ██║██║███████║██████╔╝ ╚████╔╝ 
@@ -21,169 +160,15 @@ const moodDiaryBanner = `
  ╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝     ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   
 `
 
-type menuChoice struct {
-	label  string
-	screen state.ScreenType
-	params any
-	key    string
-	isExit bool
-}
-
-type MenuScreen struct {
-	state.BaseState
-	translator i18n.Translator
-	choices    []menuChoice
-	cursor     int
-}
-
-func NewMenuScreen(tr i18n.Translator) state.Screen {
-	s := &MenuScreen{
-		translator: tr,
-		cursor:     0,
-	}
-	s.updateChoices()
-	return s
-}
-
-func (s *MenuScreen) updateChoices() {
-	s.choices = []menuChoice{
-		{label: s.t("menu.item_record"), screen: state.ScreenMoodForm, params: nil, key: "r"},
-		{label: s.t("menu.item_calendar"), screen: state.ScreenCalendar, params: nil, key: "c"},
-		{label: s.t("menu.item_history"), screen: state.ScreenHistory, params: nil, key: "h"},
-		{label: s.t("menu.item_stats"), screen: state.ScreenStats, params: nil, key: "s"},
-		{label: s.t("menu.item_settings"), screen: state.ScreenSettings, params: nil, key: "o"},
-		{label: s.t("menu.item_exit"), screen: state.ScreenMenu, params: nil, key: "q", isExit: true},
-	}
-}
-
-func (s *MenuScreen) t(key string, args ...any) string {
-	if s.translator == nil {
-		return key
-	}
-	return s.translator.T(key, args...)
-}
-
-func (s *MenuScreen) Init() tea.Cmd {
-	s.updateChoices()
-	return nil
-}
-
-func (s *MenuScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		s.SetSize(msg.Width, msg.Height)
-		return s, nil
-
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "up", "k":
-			if s.cursor > 0 {
-				s.cursor--
-			}
-		case "down", "j":
-			if s.cursor < len(s.choices)-1 {
-				s.cursor++
-			}
-		case "enter", " ":
-			choice := s.choices[s.cursor]
-			if choice.isExit {
-				return s, tea.Quit
-			}
-			return s, state.Navigate(choice.screen, choice.params)
-		case "r", "c", "h", "s", "o":
-			for _, ch := range s.choices {
-				if ch.key == msg.String() && !ch.isExit {
-					return s, state.Navigate(ch.screen, ch.params)
-				}
-			}
-		case "q", "esc":
-			choice := s.choices[s.cursor]
-			if choice.isExit {
-				return s, tea.Quit
-			}
-		}
-	}
-	return s, nil
-}
-
-func (s *MenuScreen) View() string {
-	w, h := s.Width, s.Height
-	if w == 0 {
-		w = 80
-	}
-	if h == 0 {
-		h = 40
-	}
-
-	var b strings.Builder
-
-	trimmedBanner := strings.TrimSpace(moodDiaryBanner)
+	subtitle := s.t("menu.title")
 
 	titleStyle := lipgloss.NewStyle().
 		Foreground(styles.PastelLavender).
-		Bold(true).
-		Align(lipgloss.Left).
-		Width(w)
+		Bold(true)
 
-	b.WriteString(titleStyle.Render(trimmedBanner))
-	b.WriteString("\n")
-
-	subtitle := lipgloss.NewStyle().
+	subtitleStyle := lipgloss.NewStyle().
 		Foreground(styles.TextMuted).
-		Align(lipgloss.Left).
-		Width(w).
-		Render("✦ " + s.t("menu.subtitle") + " ✦")
-	b.WriteString(subtitle)
-	b.WriteString("\n\n")
+		Italic(true)
 
-	for i, choice := range s.choices {
-		var item strings.Builder
-
-		baseStyle := lipgloss.NewStyle().
-			Padding(0, 2).
-			Width(w).
-			Align(lipgloss.Left)
-
-		if i == s.cursor {
-
-			baseStyle = baseStyle.
-				Background(styles.PastelLavender).
-				Foreground(styles.TextLight).
-				Bold(true)
-		} else {
-			baseStyle = baseStyle.Foreground(styles.TextDark)
-		}
-
-		label := choice.label
-		if choice.key != "" {
-			if i == s.cursor {
-
-				label += fmt.Sprintf("  [%s]", choice.key)
-			} else {
-
-				label += lipgloss.NewStyle().
-					Foreground(styles.TextMuted).
-					Render(fmt.Sprintf("  [%s]", choice.key))
-			}
-		}
-
-		item.WriteString(baseStyle.Render(label))
-		b.WriteString(item.String())
-		b.WriteString("\n")
-	}
-
-	b.WriteString("\n")
-
-	help := lipgloss.NewStyle().
-		Foreground(styles.TextMuted).
-		Align(lipgloss.Left).
-		Width(w).
-		Render(s.t("help.navigation.menu"))
-	b.WriteString(help)
-
-	return lipgloss.NewStyle().
-		Width(w).
-		Height(h).
-		Padding(1, 0).
-		Render(b.String())
+	return titleStyle.Render(title) + "\n" + subtitleStyle.Render(subtitle)
 }
