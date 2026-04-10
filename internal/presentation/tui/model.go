@@ -4,42 +4,27 @@ import (
 	"context"
 
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/ignavan39/mood-diary/internal/application/usecase"
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
-)
-
-type Screen int
-
-const (
-	ScreenMenu Screen = iota
-	ScreenRecord
-	ScreenStats
-	ScreenHistory
-	ScreenEdit
-	ScreenSettings
-	ScreenCalendar
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/screens"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
 type Model struct {
-	ctx           context.Context
-	service       *usecase.MoodService
-	currentScreen Screen
-
-	menuModel     *MenuModel
-	recordModel   *RecordModel
-	statsModel    *StatsModel
-	historyModel  *HistoryModel
-	editModel     *EditModel
-	settingsModel *SettingsModel
-	calendarModel *CalendarModel
-
+	ctx          context.Context
+	service      *usecase.MoodService
 	translator   i18n.Translator
 	settingsRepo repository.SettingsRepository
 
+	current     state.Screen
+	currentType state.ScreenType
+
+	history []state.ScreenType
+
 	width  int
 	height int
-	err    error
 }
 
 func NewModel(
@@ -49,188 +34,103 @@ func NewModel(
 	settingsRepo repository.SettingsRepository,
 ) *Model {
 	m := &Model{
-		ctx:           ctx,
-		service:       service,
-		currentScreen: ScreenMenu,
-		translator:    translator,
-		settingsRepo:  settingsRepo,
+		ctx:          ctx,
+		service:      service,
+		translator:   translator,
+		settingsRepo: settingsRepo,
+		currentType:  state.ScreenMenu,
 	}
 
-	m.menuModel = NewMenuModel(translator)
-	m.recordModel = NewRecordModel(service, translator)
-	m.statsModel = NewStatsModel(service, translator)
-	m.historyModel = NewHistoryModel(service, translator)
-	m.editModel = NewEditModel(service, translator)
-	m.settingsModel = NewSettingsModel(translator, settingsRepo)
-	m.calendarModel = NewCalendarModel(service, translator)
+	m.current = screens.NewMenuScreen(translator)
+
 	return m
 }
 
 func (m *Model) Init() tea.Cmd {
-	return nil
+	return m.current.Init()
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		return m, nil
+
+		var cmd tea.Cmd
+		m.current, cmd = m.current.Update(msg)
+		return m, cmd
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			if m.currentScreen == ScreenMenu {
+
+		if msg.String() == "ctrl+c" {
+			return m, tea.Quit
+		}
+
+		if msg.String() == "q" || msg.String() == "esc" {
+			if m.currentType == state.ScreenMenu {
 				return m, tea.Quit
 			}
 
-			m.currentScreen = ScreenMenu
-			return m, nil
 		}
 
-	case NavigateMsg:
-		oldScreen := m.currentScreen
-		m.currentScreen = msg.Screen
-
-		if oldScreen != msg.Screen {
-			cmd := m.initCurrentScreen()
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-		}
-
-	case NavigateToEditMsg:
-
-		m.currentScreen = ScreenEdit
-		m.editModel.SetEntry(msg.Entry)
-	case CalendarDateSelectedMsg:
-
-		return m, nil
-
-	case NavigateToNewEntryMsg:
-
-		m.recordModel = NewRecordModel(m.service, m.translator)
-		m.currentScreen = ScreenRecord
-		return m, nil
-
-	case NavigateToDeleteMsg:
-
-		_ = m.service.DeleteMood(m.ctx, msg.Entry.Date)
-
-		if m.currentScreen == ScreenCalendar {
-			return m, m.calendarModel.loadMonthData()
-		}
-		return m, nil
+	case state.NavigateMsg:
+		return m, m.navigate(msg.To, msg.Params)
 	}
 
 	var cmd tea.Cmd
-	switch m.currentScreen {
-	case ScreenMenu:
-		var menuModel tea.Model
-		menuModel, cmd = m.menuModel.Update(msg)
-		m.menuModel = menuModel.(*MenuModel)
+	m.current, cmd = m.current.Update(msg)
 
-	case ScreenRecord:
-		var recordModel tea.Model
-		recordModel, cmd = m.recordModel.Update(msg)
-		m.recordModel = recordModel.(*RecordModel)
-
-	case ScreenStats:
-		var statsModel tea.Model
-		statsModel, cmd = m.statsModel.Update(msg)
-		m.statsModel = statsModel.(*StatsModel)
-
-	case ScreenHistory:
-		var historyModel tea.Model
-		historyModel, cmd = m.historyModel.Update(msg)
-		m.historyModel = historyModel.(*HistoryModel)
-
-	case ScreenEdit:
-		var editModel tea.Model
-		editModel, cmd = m.editModel.Update(msg)
-		m.editModel = editModel.(*EditModel)
-
-	case ScreenSettings:
-		var settingsModel tea.Model
-		settingsModel, cmd = m.settingsModel.Update(msg)
-		m.settingsModel = settingsModel.(*SettingsModel)
-
-	case ScreenCalendar:
-		var calendarModel tea.Model
-		calendarModel, cmd = m.calendarModel.Update(msg)
-		m.calendarModel = calendarModel.(*CalendarModel)
-	}
-	if cmd != nil {
-		cmds = append(cmds, cmd)
-	}
-
-	if len(cmds) > 0 {
-		return m, tea.Batch(cmds...)
-	}
-	return m, nil
-}
-
-func (m *Model) initCurrentScreen() tea.Cmd {
-	switch m.currentScreen {
-	case ScreenMenu:
-		return m.menuModel.Init()
-	case ScreenRecord:
-
-		m.recordModel = NewRecordModel(m.service, m.translator)
-		return m.recordModel.Init()
-	case ScreenStats:
-
-		m.statsModel = NewStatsModel(m.service, m.translator)
-		return m.statsModel.Init()
-	case ScreenHistory:
-
-		m.historyModel = NewHistoryModel(m.service, m.translator)
-		return m.historyModel.Init()
-	case ScreenEdit:
-		return m.editModel.Init()
-	case ScreenSettings:
-		m.settingsModel = NewSettingsModel(m.translator, m.settingsRepo)
-		return m.settingsModel.Init()
-	case ScreenCalendar:
-		m.calendarModel = NewCalendarModel(m.service, m.translator)
-		return m.calendarModel.Init()
-	}
-	return nil
+	return m, cmd
 }
 
 func (m *Model) View() string {
-	switch m.currentScreen {
-	case ScreenMenu:
-		return m.menuModel.View()
-	case ScreenRecord:
-		return m.recordModel.View()
-	case ScreenStats:
-		return m.statsModel.View()
-	case ScreenHistory:
-		return m.historyModel.View()
-	case ScreenEdit:
-		return m.editModel.View()
-	case ScreenSettings:
-		return m.settingsModel.View()
-	case ScreenCalendar:
-		return m.calendarModel.View()
-	default:
-		return "Unknown screen"
+	return m.current.View()
+}
+
+func (m *Model) navigate(to state.ScreenType, params interface{}) tea.Cmd {
+
+	if to != m.currentType {
+		m.history = append(m.history, m.currentType)
 	}
-}
+	m.currentType = to
 
-type NavigateMsg struct {
-	Screen Screen
-}
+	switch to {
+	case state.ScreenMenu:
+		m.current = screens.NewMenuScreen(m.translator)
 
-type ErrorMsg struct {
-	Error error
-}
+	case state.ScreenMoodForm:
+		if p, ok := params.(state.MoodFormParams); ok {
+			m.current = screens.NewMoodFormScreen(
+				m.service,
+				m.translator,
+				p.Date,
+				p.Entry,
+			)
+		}
 
-func Navigate(screen Screen) tea.Cmd {
-	return func() tea.Msg {
-		return NavigateMsg{Screen: screen}
+	case state.ScreenCalendar:
+		m.current = screens.NewCalendarScreen(m.service, m.translator)
+
+	case state.ScreenHistory:
+		m.current = screens.NewHistoryScreen(m.service, m.translator)
+
+	case state.ScreenStats:
+		m.current = screens.NewStatsScreen(m.service, m.translator)
+
+	case state.ScreenSettings:
+		m.current = screens.NewSettingsScreen(m.translator, m.settingsRepo)
 	}
+
+	return m.current.Init()
+}
+
+func (m *Model) navigateBack() tea.Cmd {
+	if len(m.history) == 0 {
+		return state.Navigate(state.ScreenMenu, nil)
+	}
+
+	previous := m.history[len(m.history)-1]
+	m.history = m.history[:len(m.history)-1]
+
+	return state.Navigate(previous, nil)
 }
