@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
@@ -67,7 +68,7 @@ func (s *SuccessMessage) View() string {
 		Bold(true).
 		Padding(2, 0)
 
-	return style.Render("✓ " + s.message)
+	return style.Render(i18n.CommonSuccessPrefixKey + " " + s.message)
 }
 
 type ErrorMessage struct {

@@ -285,7 +285,6 @@ func NewMoodNoteStep(screen *MoodFormScreen) *MoodNoteStep {
 func (s *MoodNoteStep) Render(width, height int) string {
 	var b strings.Builder
 
-	b.WriteString(styles.SubtitleStyle.Render(s.screen.t(i18n.RecordPromptNoteKey)))
 	b.WriteString("\n\n")
 
 	b.WriteString(s.input.View())

@@ -144,9 +144,9 @@ func (w *Wizard) renderProgress() string {
 
 	style := lipgloss.NewStyle().
 		Foreground(styles.TextMuted).
-		Align(lipgloss.Center)
+		Align(lipgloss.Left)
 
-	return style.Render(dots + "\n" + text)
+	return style.Render(dots + "\n\n" + text)
 }
 
 func (w *Wizard) CurrentStep() Step {

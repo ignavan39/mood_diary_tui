@@ -196,13 +196,13 @@ func (s *SettingsScreen) renderLanguageSelection() string {
 			b.WriteString("→ ")
 			b.WriteString(styles.SelectedListItemStyle.Render(fmt.Sprintf("● %s", label)))
 			if locale == s.currentLocale {
-				b.WriteString(" ✓")
+				b.WriteString(i18n.CommonSuccessPrefixKey)
 			}
 		} else {
 			b.WriteString("  ")
 			style := styles.ListItemStyle
 			if locale == s.currentLocale {
-				label = label + " ✓"
+				label = label + i18n.CommonSuccessPrefixKey
 			}
 			b.WriteString(style.Render(fmt.Sprintf("○ %s", label)))
 		}
