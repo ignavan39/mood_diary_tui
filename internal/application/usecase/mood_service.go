@@ -113,6 +113,10 @@ func (s *MoodService) GetMoodsForPeriod(ctx context.Context, period Period) ([]*
 	return s.repo.FindByDateRange(ctx, start, end)
 }
 
+func (s *MoodService) GetMoodsByDateRange(ctx context.Context, start, end time.Time) ([]*entity.MoodEntry, error) {
+	return s.repo.FindByDateRange(ctx, start, end)
+}
+
 func (s *MoodService) GetStatistics(ctx context.Context, period Period) (*repository.MoodStatistics, error) {
 	start, end := period.DateRange()
 	return s.repo.GetStatistics(ctx, start, end)
@@ -151,21 +155,4 @@ func (p Period) DateRange() (start, end time.Time) {
 
 	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
 	return start, end
-}
-
-func (p Period) String() string {
-	switch p {
-	case PeriodWeek:
-		return "Неделя"
-	case PeriodMonth:
-		return "Месяц"
-	case PeriodQuarter:
-		return "Квартал"
-	case PeriodYear:
-		return "Год"
-	case PeriodAll:
-		return "Всё время"
-	default:
-		return "Неизвестно"
-	}
 }
