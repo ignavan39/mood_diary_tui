@@ -3,6 +3,7 @@ package components
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
@@ -17,11 +18,11 @@ type ConfirmationDialog struct {
 	yesPressed bool
 }
 
-func NewConfirmation(message string, onYes, onNo tea.Cmd) *ConfirmationDialog {
+func NewConfirmation(message string, tr i18n.Translator, onYes, onNo tea.Cmd) *ConfirmationDialog {
 	return &ConfirmationDialog{
 		message:  message,
-		yesLabel: "Да",
-		noLabel:  "Нет",
+		yesLabel: tr.T(i18n.CommonYesKey),
+		noLabel:  tr.T(i18n.CommonNoKey),
 		onYes:    onYes,
 		onNo:     onNo,
 		focused:  true,

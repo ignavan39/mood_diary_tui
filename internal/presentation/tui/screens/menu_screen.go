@@ -24,7 +24,7 @@ type MenuScreen struct {
 type menuChoice struct {
 	label  string
 	screen state.ScreenType
-	params interface{}
+	params any
 	key    string
 }
 
@@ -35,31 +35,31 @@ func NewMenuScreen(translator i18n.Translator) *MenuScreen {
 
 	s.choices = []menuChoice{
 		{
-			label:  s.t("menu.record"),
+			label:  s.t(i18n.MenuRecordKey),
 			screen: state.ScreenMoodForm,
 			params: state.MoodFormParams{Date: time.Now(), Entry: nil},
 			key:    "r",
 		},
 		{
-			label:  s.t("menu.calendar"),
+			label:  s.t(i18n.MenuCalendarKey),
 			screen: state.ScreenCalendar,
 			params: state.CalendarParams{InitialDate: time.Now()},
 			key:    "c",
 		},
 		{
-			label:  s.t("menu.history"),
+			label:  s.t(i18n.MenuHistoryKey),
 			screen: state.ScreenHistory,
 			params: nil,
 			key:    "h",
 		},
 		{
-			label:  s.t("menu.stats"),
+			label:  s.t(i18n.MenuStatsKey),
 			screen: state.ScreenStats,
 			params: state.StatsParams{Period: "month"},
 			key:    "s",
 		},
 		{
-			label:  s.t("menu.settings"),
+			label:  s.t(i18n.MenuSettingsKey),
 			screen: state.ScreenSettings,
 			params: nil,
 			key:    "o",
@@ -141,7 +141,7 @@ func (s *MenuScreen) View() string {
 	}
 
 	b.WriteString("\n")
-	help := styles.HelpStyle.Render(s.t("help.navigation.menu"))
+	help := styles.HelpStyle.Render(s.t(i18n.HelpNavigationMenuKey))
 	b.WriteString(help)
 
 	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
@@ -157,7 +157,7 @@ func (s *MenuScreen) renderHeader() string {
  ╚═╝     ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝     ╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   
 `
 
-	subtitle := s.t("menu.title")
+	subtitle := s.t(i18n.MenuTitleKey)
 
 	titleStyle := lipgloss.NewStyle().
 		Foreground(styles.PastelLavender).

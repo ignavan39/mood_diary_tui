@@ -153,31 +153,31 @@ func (s *SettingsScreen) saveLocale(locale string) tea.Cmd {
 func (s *SettingsScreen) View() string {
 	var b strings.Builder
 
-	header := styles.HeaderStyle.Render(s.t("settings.title"))
+	header := styles.HeaderStyle.Render(s.t(i18n.SettingsTitleKey))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	if s.Error != nil {
-		b.WriteString(styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error()))
+		b.WriteString(styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error()))
 		b.WriteString("\n\n")
 	}
 
 	if s.saved {
-		b.WriteString(styles.SuccessStyle.Render(s.t("settings.success_edit")))
+		b.WriteString(styles.SuccessStyle.Render(s.t(i18n.SettingsSuccessEditKey)))
 		b.WriteString("\n\n")
-		b.WriteString(styles.HelpStyle.Render(s.t("common.returning")))
+		b.WriteString(styles.HelpStyle.Render(s.t(i18n.CommonReturningKey)))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if s.Loading {
-		b.WriteString(styles.InfoStyle.Render(s.t("common.loading")))
+		b.WriteString(styles.InfoStyle.Render(s.t(i18n.CommonLoaderMessageKey)))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	b.WriteString(s.renderLanguageSelection())
 	b.WriteString("\n")
 
-	help := styles.HelpStyle.Render(s.t("help.navigation.settings"))
+	help := styles.HelpStyle.Render(s.t(i18n.HelpNavigationSettingsKey))
 	b.WriteString(help)
 
 	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
@@ -186,7 +186,7 @@ func (s *SettingsScreen) View() string {
 func (s *SettingsScreen) renderLanguageSelection() string {
 	var b strings.Builder
 
-	b.WriteString(styles.SubtitleStyle.Render(s.t("settings.language")))
+	b.WriteString(styles.SubtitleStyle.Render(s.t(i18n.SettingsOptionLanguageKey)))
 	b.WriteString("\n\n")
 
 	for i, locale := range s.locales {

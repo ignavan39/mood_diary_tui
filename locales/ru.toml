@@ -25,6 +25,7 @@ edit_step2 = "y/Enter: Сохранить • n/Esc: Отмена"
 delete_confirm = "y: Да, удалить • n/Esc: Отмена"
 settings = "↑/↓: Выбор • Enter: Подтвердить • Esc: Назад"
 calendar = "←/→: Изменить день • ↑/↓: Изменить неделю • Enter: Выбрать • n: Новая • e: Редактировать • d: Удалить • Esc: Назад"
+record_choice = "← / → для изменения, 0-9 для прямого ввода"
 
 [menu]
 title = "Дневник настроения • Отслеживайте свои эмоции 🌸"
@@ -49,6 +50,7 @@ saving = "Сохранение..."
 box_mood = "Настроение: %s %s (%d/10)"
 box_note = "Заметка: %s"
 box_date = "Дата: %s"
+without_note = "(без заметки)"
 
 [stats]
 title = "Статистика"
@@ -65,12 +67,18 @@ month = "Месяц"
 quarter = "Квартал"
 year = "Год"
 all = "Всё время"
+today = "Сегодня"
+yesterday = "Вчера"
+tomorrow = "Завтра"
+after_days = "через %d дней"
+before_days = "%d дней назад"
 
 [history]
 title = "История записей"
 header_date = "Дата"
 header_mood = "Настроение"
 header_note = "Заметка"
+empty = "Пока нет записей. Нажмите 'n', чтобы создать первую!"
 
 [edit]
 title = "✏️ Редактировать запись"
@@ -114,9 +122,6 @@ save = "✓ Настройки сохранены!"
 
 [calendar]
 no_entry = "Нет записи (нажмите 'n' для создания)"
-
-[calendar.help.navigation]
-calendar = "←/→ день | ↑/↓ неделя | Enter выбрать | n новая | e редактировать | d удалить | Esc назад"
 
 [date.month]
 1 = "Январь"

@@ -3,6 +3,8 @@ package formatters
 import (
 	"fmt"
 	"time"
+
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 )
 
 func FormatDate(t time.Time) string {
@@ -17,7 +19,7 @@ func FormatDateRange(start, end time.Time) string {
 	return fmt.Sprintf("%s — %s", FormatDate(start), FormatDate(end))
 }
 
-func FormatRelativeDate(t time.Time) string {
+func FormatRelativeDate(t time.Time, tr i18n.Translator) string {
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	date := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
@@ -26,15 +28,15 @@ func FormatRelativeDate(t time.Time) string {
 
 	switch {
 	case diff == 0:
-		return "Сегодня"
+		return tr.T(i18n.StatsTodayKey)
 	case diff == 1:
-		return "Вчера"
+		return tr.T(i18n.StatsYesterdayKey)
 	case diff == -1:
-		return "Завтра"
+		return tr.T(i18n.StatsTomorrowKey)
 	case diff > 1 && diff < 7:
-		return fmt.Sprintf("%d дня назад", int(diff))
+		return tr.T(i18n.StatsBeforeDaysKey, int(diff))
 	case diff < -1 && diff > -7:
-		return fmt.Sprintf("Через %d дня", int(-diff))
+		return tr.T(i18n.StatsAfterDaysKey, int(-diff))
 	default:
 		return FormatDate(t)
 	}

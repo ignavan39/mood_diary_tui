@@ -11,6 +11,8 @@ mood_label = "Mood:"
 note_label = "Note:"
 confirm_label = "Confirm:"
 step_label = "Step:"
+yes = "Yes"
+no = "No"
 
 [help.navigation]
 menu = "↑/↓: Navigate • Enter: Select • q: Exit"
@@ -25,6 +27,7 @@ edit_step2 = "y/Enter: Save • n/Esc: Cancel"
 delete_confirm = "y: Yes, delete • n/Esc: Cancel"
 settings = "↑/↓: Select • Enter: Confirm • Esc: Back"
 calendar = "←/→: Change day • ↑/↓: Change week • Enter: Select • n: New • e: Edit • d: Delete • Esc: Back"
+record_choice = "← / → to change, 0-9 for direct input"
 
 [menu]
 title = "Mood Diary • Track your emotions 🌸"
@@ -34,6 +37,7 @@ history = "🗓️  Entry history"
 exit = "❌ Exit"
 settings = "⚙️  Settings"
 calendar = "📅 Calendar"
+
 [record]
 title_new = "📝 Record Mood"
 title_edit = "✏️ Edit Mood"
@@ -48,6 +52,7 @@ saving = "Saving..."
 box_mood = "Mood: %s %s (%d/10)"
 box_note = "Note: %s"
 box_date = "Date: %s"
+without_note = "(no note)"
 
 [stats]
 title = "Statistics"
@@ -64,12 +69,18 @@ month = "Month"
 quarter = "Quarter"
 year = "Year"
 all = "All"
+today = "Today"
+yesterday = "Yesterday"
+tomorrow = "Tomorrow"
+after_days = "after %d days"
+before_days = "%d days ago"
 
 [history]
 title = "Entry History"
 header_date = "Date"
 header_mood = "Mood"
 header_note = "Note"
+empty = "No entries yet. Press 'n' to create your first one!"
 
 [edit]
 title = "✏️ Edit Entry"
@@ -82,6 +93,7 @@ prompt_edit_note = "Edit note:"
 prompt_confirm_changes = "Confirm changes:"
 delete_title = "⚠️ Delete this entry?"
 delete_warning = "Entry from %s will be permanently deleted.\nAre you sure?"
+
 
 [settings]
 title = "⚙️ Settings"

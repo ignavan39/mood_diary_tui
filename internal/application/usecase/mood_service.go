@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	ErrMoodAlreadyRecorded = errors.New("настроение для этой даты уже записано")
-	ErrMoodNotFound        = errors.New("запись не найдена")
+	ErrMoodAlreadyRecorded = errors.New("mood for this date is already recorded")
+	ErrMoodNotFound        = errors.New("mood entry not found")
 )
 
 type MoodService struct {

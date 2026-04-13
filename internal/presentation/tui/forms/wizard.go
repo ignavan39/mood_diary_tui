@@ -140,7 +140,7 @@ func (w *Wizard) renderProgress() string {
 		}
 	}
 
-	text := fmt.Sprintf("%s %d / %d", w.translator.T("common.step_label"), current, total)
+	text := fmt.Sprintf("%s %d / %d", w.translator.T(i18n.CommonStepLabelKey), current, total)
 
 	style := lipgloss.NewStyle().
 		Foreground(styles.TextMuted).

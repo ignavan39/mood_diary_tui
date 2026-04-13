@@ -133,12 +133,12 @@ func (s *StatsScreen) loadStats() tea.Cmd {
 func (s *StatsScreen) View() string {
 	var b strings.Builder
 
-	header := styles.HeaderStyle.Render(s.t("stats.title"))
+	header := styles.HeaderStyle.Render(s.t(i18n.StatsTitleKey))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	if s.Error != nil {
-		errMsg := styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error())
+		errMsg := styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error())
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
@@ -147,14 +147,14 @@ func (s *StatsScreen) View() string {
 	b.WriteString("\n\n")
 
 	if s.Loading {
-		b.WriteString(styles.InfoStyle.Render(s.t("common.loading")))
+		b.WriteString(styles.InfoStyle.Render(s.t(i18n.CommonLoaderMessageKey)))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if s.stats == nil || s.stats.Count == 0 {
-		b.WriteString(styles.InfoStyle.Render(s.t("stats.no_data")))
+		b.WriteString(styles.InfoStyle.Render(s.t(i18n.StatsNoDataKey)))
 		b.WriteString("\n\n")
-		help := styles.HelpStyle.Render(s.t("help.navigation.stats"))
+		help := styles.HelpStyle.Render(s.t(i18n.HelpNavigationStatsKey))
 		b.WriteString(help)
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
@@ -165,7 +165,7 @@ func (s *StatsScreen) View() string {
 	b.WriteString(s.renderDistribution())
 	b.WriteString("\n\n")
 
-	help := styles.HelpStyle.Render(s.t("help.navigation.stats"))
+	help := styles.HelpStyle.Render(s.t(i18n.HelpNavigationStatsKey))
 	b.WriteString(help)
 
 	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
@@ -200,19 +200,19 @@ func (s *StatsScreen) renderStatsCards() string {
 	}
 
 	totalCard := s.createStatCard(
-		s.t("stats.total_entries"),
+		s.t(i18n.StatsTotalEntriesKey),
 		fmt.Sprintf("%d", s.stats.Count),
 		styles.PastelSky,
 	)
 
 	avgCard := s.createStatCard(
-		s.t("stats.average"),
+		s.t(i18n.StatsAverageKey),
 		fmt.Sprintf("%.1f", s.stats.Average),
 		styles.GetMoodColor(int(s.stats.Average+0.5)),
 	)
 
 	rangeCard := s.createStatCard(
-		s.t("stats.range"),
+		s.t(i18n.StatsRangeKey),
 		fmt.Sprintf("%d - %d", s.stats.MinLevel, s.stats.MaxLevel),
 		styles.PastelMint,
 	)
@@ -241,15 +241,15 @@ func (s *StatsScreen) createStatCard(title, value string, color lipgloss.Color) 
 func (s *StatsScreen) PeriodLabel(p usecase.Period) string {
 	switch p {
 	case usecase.PeriodWeek:
-		return s.translator.T("stats.week")
+		return s.translator.T(i18n.StatsWeekKey)
 	case usecase.PeriodMonth:
-		return s.translator.T("stats.month")
+		return s.translator.T(i18n.StatsMonthKey)
 	case usecase.PeriodQuarter:
-		return s.translator.T("stats.quarter")
+		return s.translator.T(i18n.StatsQuarterKey)
 	case usecase.PeriodYear:
-		return s.translator.T("stats.year")
+		return s.translator.T(i18n.StatsYearKey)
 	case usecase.PeriodAll:
-		return s.translator.T("stats.all")
+		return s.translator.T(i18n.StatsAllKey)
 	default:
 		return "Unknown"
 	}
@@ -261,7 +261,7 @@ func (s *StatsScreen) renderDistribution() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(styles.SubtitleStyle.Render(s.t("stats.distribution")))
+	b.WriteString(styles.SubtitleStyle.Render(s.t(i18n.StatsDistributionKey)))
 	b.WriteString("\n\n")
 
 	maxCount := 0

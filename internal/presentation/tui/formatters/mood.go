@@ -17,7 +17,7 @@ func FormatMoodEntry(entry *entity.MoodEntry, translator i18n.Translator) string
 
 	note := entry.Note
 	if note == "" {
-		note = "без заметки"
+		note = translator.T(i18n.RecordWithoutNoteKey)
 	}
 
 	return fmt.Sprintf("%s | %s | %s", dateStr, moodStr, note)

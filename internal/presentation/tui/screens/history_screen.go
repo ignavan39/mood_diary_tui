@@ -33,7 +33,7 @@ func NewHistoryScreen(service *usecase.MoodService, translator i18n.Translator) 
 	}
 }
 
-func (s *HistoryScreen) t(key string, args ...interface{}) string {
+func (s *HistoryScreen) t(key string, args ...any) string {
 	if s.translator == nil {
 		return key
 	}
@@ -137,10 +137,10 @@ func (s *HistoryScreen) View() string {
 		Align(lipgloss.Center).
 		Width(s.Width)
 
-	header := headerStyle.Render("📜 " + s.t("history.title"))
+	header := headerStyle.Render("📜 " + s.t(i18n.HistoryTitleKey))
 
 	if s.Loading {
-		loading := components.NewLoading(s.t("common.loading"))
+		loading := components.NewLoading(s.t(i18n.CommonLoaderMessageKey))
 		return lipgloss.JoinVertical(
 			lipgloss.Center,
 			header,
@@ -170,19 +170,19 @@ func (s *HistoryScreen) View() string {
 			lipgloss.Center,
 			header,
 			"",
-			emptyStyle.Render(s.t("history.empty")),
+			emptyStyle.Render(s.t(i18n.HistoryEmptyKey)),
 		)
 	}
 
 	var listContent string
 	for i, entry := range s.entries {
-		itemStyle := styles.ListItemStyle.Copy()
+		itemStyle := styles.ListItemStyle
 
 		if i == s.cursor {
-			itemStyle = styles.SelectedListItemStyle.Copy()
+			itemStyle = styles.SelectedListItemStyle
 		}
 
-		dateStr := formatters.FormatRelativeDate(entry.Date)
+		dateStr := formatters.FormatRelativeDate(entry.Date, s.translator)
 		moodStr := formatters.FormatMoodLevel(entry.Level, s.translator)
 		note := formatters.TruncateNote(entry.Note, 40)
 
@@ -196,7 +196,7 @@ func (s *HistoryScreen) View() string {
 		Width(s.Width).
 		Padding(1, 0)
 
-	help := helpStyle.Render(s.t("help.navigation.history"))
+	help := helpStyle.Render(s.t(i18n.HelpNavigationHistoryKey))
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,

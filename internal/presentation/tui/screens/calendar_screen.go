@@ -207,7 +207,7 @@ func (s *CalendarScreen) View() string {
 	}
 
 	if s.Loading {
-		b.WriteString(styles.InfoStyle.Render(s.t("common.loading")))
+		b.WriteString(styles.InfoStyle.Render(s.t(i18n.CommonLoaderMessageKey)))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 

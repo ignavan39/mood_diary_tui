@@ -108,33 +108,33 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 func (s *MoodFormScreen) View() string {
 	var b strings.Builder
 
-	headerKey := "record.title_new"
+	headerKey := i18n.RecordTitleNewKey
 	if s.entry != nil {
-		headerKey = "record.title_edit"
+		headerKey = i18n.RecordTitleEditKey
 	}
 	header := styles.HeaderStyle.Render(s.t(headerKey))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	if s.saved {
-		successKey := "record.success_new"
+		successKey := i18n.RecordSuccessNewKey
 		if s.entry != nil {
-			successKey = "record.success_edit"
+			successKey = i18n.RecordSuccessEditKey
 		}
 		success := styles.SuccessStyle.Render(s.t(successKey))
 		b.WriteString(success)
 		b.WriteString("\n\n")
-		b.WriteString(styles.HelpStyle.Render(s.t("common.returning")))
+		b.WriteString(styles.HelpStyle.Render(s.t(i18n.CommonReturningKey)))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if s.saving {
-		b.WriteString(styles.InfoStyle.Render(s.t("record.saving")))
+		b.WriteString(styles.InfoStyle.Render(s.t(i18n.RecordSavingKey)))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
 	if s.Error != nil {
-		errMsg := styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error())
+		errMsg := styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error())
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
@@ -186,7 +186,7 @@ func NewMoodLevelStep(screen *MoodFormScreen) *MoodLevelStep {
 func (s *MoodLevelStep) Render(width, height int) string {
 	var b strings.Builder
 
-	b.WriteString(styles.SubtitleStyle.Render(s.screen.t("record.prompt_feeling")))
+	b.WriteString(styles.SubtitleStyle.Render(s.screen.t(i18n.RecordPromptFeelingKey)))
 	b.WriteString("\n\n")
 
 	b.WriteString(s.renderMoodScale())
@@ -199,7 +199,7 @@ func (s *MoodLevelStep) Render(width, height int) string {
 	b.WriteString(currentStyle.Render(current))
 	b.WriteString("\n\n")
 
-	help := styles.HelpStyle.Render(s.screen.t("help.navigation.record_step0"))
+	help := styles.HelpStyle.Render(s.screen.t(i18n.HelpNavigationRecordStep0Key))
 	b.WriteString(help)
 
 	return b.String()
@@ -267,7 +267,7 @@ type MoodNoteStep struct {
 
 func NewMoodNoteStep(screen *MoodFormScreen) *MoodNoteStep {
 	ti := textinput.New()
-	ti.Placeholder = screen.t("record.prompt_note")
+	ti.Placeholder = screen.t(i18n.RecordPromptNoteKey)
 	ti.CharLimit = 200
 	ti.Width = 50
 
@@ -285,13 +285,13 @@ func NewMoodNoteStep(screen *MoodFormScreen) *MoodNoteStep {
 func (s *MoodNoteStep) Render(width, height int) string {
 	var b strings.Builder
 
-	b.WriteString(styles.SubtitleStyle.Render(s.screen.t("record.prompt_note")))
+	b.WriteString(styles.SubtitleStyle.Render(s.screen.t(i18n.RecordPromptNoteKey)))
 	b.WriteString("\n\n")
 
 	b.WriteString(s.input.View())
 	b.WriteString("\n\n")
 
-	help := styles.HelpStyle.Render(s.screen.t("help.navigation.record_step1"))
+	help := styles.HelpStyle.Render(s.screen.t(i18n.HelpNavigationRecordStep1Key))
 	b.WriteString(help)
 
 	return b.String()
@@ -331,9 +331,9 @@ func NewMoodConfirmationStep(screen *MoodFormScreen) *MoodConfirmationStep {
 func (s *MoodConfirmationStep) Render(width, height int) string {
 	var b strings.Builder
 
-	confirmKey := "record.prompt_confirm_new"
+	confirmKey := i18n.RecordPromptConfirmNewKey
 	if s.screen.entry != nil {
-		confirmKey = "record.prompt_confirm_edit"
+		confirmKey = i18n.RecordPromptConfirmEditKey
 	}
 	b.WriteString(styles.SubtitleStyle.Render(s.screen.t(confirmKey)))
 	b.WriteString("\n\n")
@@ -342,7 +342,7 @@ func (s *MoodConfirmationStep) Render(width, height int) string {
 
 	note := s.screen.note
 	if note == "" {
-		note = s.screen.t("common.no_note")
+		note = s.screen.t(i18n.CommonNoNoteKey)
 	}
 
 	desc := s.screen.t(moodLevel.StringKey())
@@ -352,9 +352,9 @@ func (s *MoodConfirmationStep) Render(width, height int) string {
 		BorderForeground(styles.GetMoodColor(s.screen.moodLevel)).
 		Padding(1, 2).
 		Render(fmt.Sprintf(
-			s.screen.t("record.box_mood")+"\n"+
-				s.screen.t("record.box_note")+"\n"+
-				s.screen.t("record.box_date"),
+			s.screen.t(i18n.RecordBoxMoodKey)+"\n"+
+				s.screen.t(i18n.RecordBoxNoteKey)+"\n"+
+				s.screen.t(i18n.RecordBoxDateKey),
 			moodLevel.Emoji(),
 			desc,
 			s.screen.moodLevel,
@@ -365,7 +365,7 @@ func (s *MoodConfirmationStep) Render(width, height int) string {
 	b.WriteString(box)
 	b.WriteString("\n\n")
 
-	help := styles.HelpStyle.Render(s.screen.t("help.navigation.record_step2"))
+	help := styles.HelpStyle.Render(s.screen.t(i18n.HelpNavigationRecordStep2Key))
 	b.WriteString(help)
 
 	return b.String()

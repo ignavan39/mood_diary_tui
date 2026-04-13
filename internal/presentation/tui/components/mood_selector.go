@@ -123,7 +123,7 @@ func (m *MoodSelector) View() string {
 		Foreground(styles.TextMuted).
 		Align(lipgloss.Center).
 		Width(55).
-		Render("← / → для изменения, 0-9 для прямого ввода")
+		Render(m.tr.T(i18n.HelpNavigationRecordChoiceKey))
 
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
