@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
@@ -15,11 +16,13 @@ type MoodSelector struct {
 	max      int
 	onChange func(int)
 	focused  bool
+	tr       i18n.Translator
 }
 
-func NewMoodSelector(initial int) *MoodSelector {
+func NewMoodSelector(initial int, tr i18n.Translator) *MoodSelector {
 	return &MoodSelector{
 		value: initial,
+		tr:    tr,
 		min:   0,
 		max:   10,
 	}
@@ -104,7 +107,7 @@ func (m *MoodSelector) View() string {
 	}
 
 	emoji := level.Emoji()
-	description := level.String()
+	description := m.tr.T(level.StringKey())
 
 	currentStyle := lipgloss.NewStyle().
 		Foreground(styles.MoodColors[m.value]).

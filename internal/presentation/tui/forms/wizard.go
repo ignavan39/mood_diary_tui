@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 )
 
@@ -28,12 +29,14 @@ type Wizard struct {
 	width        int
 	height       int
 	errorMessage string
+	translator   i18n.Translator
 }
 
-func NewWizard(steps []Step) *Wizard {
+func NewWizard(steps []Step, translator i18n.Translator) *Wizard {
 	return &Wizard{
 		steps:       steps,
 		currentStep: 0,
+		translator:  translator,
 	}
 }
 
@@ -137,7 +140,7 @@ func (w *Wizard) renderProgress() string {
 		}
 	}
 
-	text := fmt.Sprintf("Шаг %d из %d", current, total)
+	text := fmt.Sprintf("%s %d / %d", w.translator.T("common.step_label"), current, total)
 
 	style := lipgloss.NewStyle().
 		Foreground(styles.TextMuted).

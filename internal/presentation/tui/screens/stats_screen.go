@@ -13,7 +13,6 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
-	"github.com/ignavan39/mood-diary/internal/presentation/tui/components"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
@@ -132,97 +131,128 @@ func (s *StatsScreen) loadStats() tea.Cmd {
 }
 
 func (s *StatsScreen) View() string {
+	var b strings.Builder
 
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(styles.PastelLavender).
-		Align(lipgloss.Center).
-		Width(s.Width)
-
-	header := headerStyle.Render("📊 " + s.t("stats.title"))
-
-	if s.Loading {
-		loading := components.NewLoading(s.t("common.loading"))
-		return lipgloss.JoinVertical(
-			lipgloss.Center,
-			header,
-			"",
-			loading.View(),
-		)
-	}
+	header := styles.HeaderStyle.Render(s.t("stats.title"))
+	b.WriteString(header)
+	b.WriteString("\n\n")
 
 	if s.Error != nil {
-		errorMsg := components.NewError(s.Error.Error())
-		return lipgloss.JoinVertical(
-			lipgloss.Center,
-			header,
-			"",
-			errorMsg.View(),
-		)
+		errMsg := styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error())
+		b.WriteString(errMsg)
+		b.WriteString("\n\n")
 	}
 
+	b.WriteString(s.renderPeriodSelector())
+	b.WriteString("\n\n")
+
+	if s.Loading {
+		b.WriteString(styles.InfoStyle.Render(s.t("common.loading")))
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+	}
+
+	if s.stats == nil || s.stats.Count == 0 {
+		b.WriteString(styles.InfoStyle.Render(s.t("stats.no_data")))
+		b.WriteString("\n\n")
+		help := styles.HelpStyle.Render(s.t("help.navigation.stats"))
+		b.WriteString(help)
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+	}
+
+	b.WriteString(s.renderStatsCards())
+	b.WriteString("\n\n")
+
+	b.WriteString(s.renderDistribution())
+	b.WriteString("\n\n")
+
+	help := styles.HelpStyle.Render(s.t("help.navigation.stats"))
+	b.WriteString(help)
+
+	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+}
+
+func (s *StatsScreen) renderPeriodSelector() string {
+	var items []string
+
+	periods := []usecase.Period{
+		usecase.PeriodWeek,
+		usecase.PeriodMonth,
+		usecase.PeriodQuarter,
+		usecase.PeriodYear,
+		usecase.PeriodAll,
+	}
+
+	for _, p := range periods {
+		text := s.PeriodLabel(p)
+		if p == s.period {
+			items = append(items, styles.SelectedButtonStyle.Render(text))
+		} else {
+			items = append(items, styles.ButtonStyle.Render(text))
+		}
+	}
+
+	return lipgloss.JoinHorizontal(lipgloss.Left, items...)
+}
+
+func (s *StatsScreen) renderStatsCards() string {
 	if s.stats == nil {
-		return lipgloss.JoinVertical(
-			lipgloss.Center,
-			header,
-			"",
-			s.t("stats.no_data"),
-		)
+		return ""
 	}
 
-	periodStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9B9B9B")).
-		Align(lipgloss.Center).
-		Width(s.Width)
-
-	period := periodStyle.Render("◀ " + s.period.String() + " ▶")
-
-	var stats strings.Builder
-	stats.WriteString(fmt.Sprintf("📝 %s: %d\n", s.t("stats.total_entries"), s.stats.Count))
-	stats.WriteString(fmt.Sprintf("📈 %s: %.1f\n", s.t("stats.average"), s.stats.Average))
-	stats.WriteString(fmt.Sprintf("🔽 %s: %d\n", s.t("stats.min"), s.stats.MinLevel))
-	stats.WriteString(fmt.Sprintf("🔼 %s: %d\n", s.t("stats.max"), s.stats.MaxLevel))
-
-	if s.stats.TotalDays > 0 {
-		completion := float64(s.stats.Count) / float64(s.stats.TotalDays) * 100
-		stats.WriteString(fmt.Sprintf("✓ %s: %.0f%%\n", s.t("stats.completion"), completion))
-	}
-
-	statsStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.PastelLavender).
-		Padding(1, 2).
-		Margin(1, 0)
-
-	statsContent := statsStyle.Render(stats.String())
-
-	distribution := s.renderDistribution()
-
-	helpStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9B9B9B")).
-		Align(lipgloss.Center).
-		Width(s.Width).
-		Padding(1, 0)
-
-	help := helpStyle.Render(s.t("help.navigation.stats"))
-
-	content := lipgloss.JoinVertical(
-		lipgloss.Center,
-		header,
-		"",
-		period,
-		"",
-		statsContent,
-		"",
-		distribution,
-		"",
-		help,
+	totalCard := s.createStatCard(
+		s.t("stats.total_entries"),
+		fmt.Sprintf("%d", s.stats.Count),
+		styles.PastelSky,
 	)
 
-	return lipgloss.NewStyle().
-		Padding(2, 4).
-		Width(s.Width).
-		Render(content)
+	avgCard := s.createStatCard(
+		s.t("stats.average"),
+		fmt.Sprintf("%.1f", s.stats.Average),
+		styles.GetMoodColor(int(s.stats.Average+0.5)),
+	)
+
+	rangeCard := s.createStatCard(
+		s.t("stats.range"),
+		fmt.Sprintf("%d - %d", s.stats.MinLevel, s.stats.MaxLevel),
+		styles.PastelMint,
+	)
+
+	return lipgloss.JoinHorizontal(lipgloss.Left,
+		totalCard, "  ",
+		avgCard, "  ",
+		rangeCard,
+	)
+}
+
+func (s *StatsScreen) createStatCard(title, value string, color lipgloss.Color) string {
+	titleStyle := lipgloss.NewStyle().
+		Foreground(styles.TextMuted).
+		Bold(true)
+
+	valueStyle := lipgloss.NewStyle().
+		Foreground(color).
+		Bold(true)
+
+	content := titleStyle.Render(title) + "\n" + valueStyle.Render(value)
+
+	return styles.BoxStyle.Render(content)
+}
+
+func (s *StatsScreen) PeriodLabel(p usecase.Period) string {
+	switch p {
+	case usecase.PeriodWeek:
+		return s.translator.T("stats.week")
+	case usecase.PeriodMonth:
+		return s.translator.T("stats.month")
+	case usecase.PeriodQuarter:
+		return s.translator.T("stats.quarter")
+	case usecase.PeriodYear:
+		return s.translator.T("stats.year")
+	case usecase.PeriodAll:
+		return s.translator.T("stats.all")
+	default:
+		return "Unknown"
+	}
 }
 
 func (s *StatsScreen) renderDistribution() string {
@@ -230,8 +260,9 @@ func (s *StatsScreen) renderDistribution() string {
 		return ""
 	}
 
-	var bars strings.Builder
-	bars.WriteString(s.t("stats.distribution") + ":\n\n")
+	var b strings.Builder
+	b.WriteString(styles.SubtitleStyle.Render(s.t("stats.distribution")))
+	b.WriteString("\n\n")
 
 	maxCount := 0
 	for _, count := range s.stats.Distribution {
@@ -257,8 +288,8 @@ func (s *StatsScreen) renderDistribution() string {
 		color := styles.GetMoodColor(level)
 		barStyle := lipgloss.NewStyle().Foreground(color)
 
-		bars.WriteString(fmt.Sprintf("%s %2d: %s %d\n", emoji, level, barStyle.Render(bar), count))
+		b.WriteString(fmt.Sprintf("%s %2d: %s %d\n", emoji, level, barStyle.Render(bar), count))
 	}
 
-	return bars.String()
+	return b.String()
 }

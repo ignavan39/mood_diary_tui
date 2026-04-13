@@ -156,20 +156,3 @@ func (p Period) DateRange() (start, end time.Time) {
 	start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
 	return start, end
 }
-
-func (p Period) String() string {
-	switch p {
-	case PeriodWeek:
-		return "Неделя"
-	case PeriodMonth:
-		return "Месяц"
-	case PeriodQuarter:
-		return "Квартал"
-	case PeriodYear:
-		return "Год"
-	case PeriodAll:
-		return "Всё время"
-	default:
-		return "Неизвестно"
-	}
-}

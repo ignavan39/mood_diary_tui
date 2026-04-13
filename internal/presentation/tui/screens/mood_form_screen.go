@@ -55,7 +55,7 @@ func NewMoodFormScreen(
 		NewMoodConfirmationStep(screen),
 	}
 
-	screen.wizard = forms.NewWizard(steps)
+	screen.wizard = forms.NewWizard(steps, translator)
 
 	return screen
 }

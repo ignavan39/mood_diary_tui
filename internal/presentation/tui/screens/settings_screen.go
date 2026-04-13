@@ -2,6 +2,9 @@ package screens
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -22,6 +25,7 @@ type SettingsScreen struct {
 	cursor        int
 	locales       []string
 	currentLocale string
+	saved         bool
 }
 
 func NewSettingsScreen(translator i18n.Translator, settingsRepo repository.SettingsRepository) *SettingsScreen {
@@ -59,11 +63,16 @@ func (s *SettingsScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 
 	case settingsSavedMsg:
 
+		s.saved = true
 		s.SetLoading(false)
-		return s, nil
+
+		return s, tea.Tick(1200*time.Millisecond, func(t time.Time) tea.Msg {
+			return state.NavigateMsg{To: state.ScreenMenu}
+		})
 
 	case state.ErrorMsg:
 		s.SetError(msg.Error)
+		s.SetLoading(false)
 		return s, nil
 	}
 
@@ -82,7 +91,7 @@ func (s *SettingsScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 			s.cursor++
 		}
 
-	case "enter", "Enter", " ":
+	case "enter", " ":
 
 		selectedLocale := s.locales[s.cursor]
 		if selectedLocale != s.currentLocale {
@@ -91,7 +100,7 @@ func (s *SettingsScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 		}
 
 	case "esc", "q":
-		return s, state.NavigateToMenu()
+		return s, state.Navigate(state.ScreenMenu, nil)
 	}
 
 	return s, nil
@@ -120,6 +129,7 @@ func (s *SettingsScreen) loadSettings() tea.Cmd {
 func (s *SettingsScreen) saveLocale(locale string) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
+
 		settings, err := s.settingsRepo.Get(ctx, entity.SettingsKeyLanguage)
 		if err != nil {
 			return state.ErrorMsg{Error: err}
@@ -131,79 +141,77 @@ func (s *SettingsScreen) saveLocale(locale string) tea.Cmd {
 			return state.ErrorMsg{Error: err}
 		}
 
+		newLocale := i18n.Locale(locale)
+		_ = s.translator.SetLocale(newLocale)
+
+		s.currentLocale = locale
+
 		return settingsSavedMsg{}
 	}
 }
 
 func (s *SettingsScreen) View() string {
+	var b strings.Builder
 
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(styles.PastelLavender).
-		Align(lipgloss.Center).
-		Width(s.Width)
+	header := styles.HeaderStyle.Render(s.t("settings.title"))
+	b.WriteString(header)
+	b.WriteString("\n\n")
 
-	header := headerStyle.Render("⚙️  " + s.t("settings.title"))
+	if s.Error != nil {
+		b.WriteString(styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error()))
+		b.WriteString("\n\n")
+	}
+
+	if s.saved {
+		b.WriteString(styles.SuccessStyle.Render(s.t("settings.success_edit")))
+		b.WriteString("\n\n")
+		b.WriteString(styles.HelpStyle.Render(s.t("common.returning")))
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+	}
 
 	if s.Loading {
-		loadingStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFB3BA")).
-			Align(lipgloss.Center).
-			Width(s.Width).
-			Padding(2, 0)
-
-		return lipgloss.JoinVertical(
-			lipgloss.Center,
-			header,
-			"",
-			loadingStyle.Render(s.t("common.loading")),
-		)
+		b.WriteString(styles.InfoStyle.Render(s.t("common.loading")))
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
-	languageLabel := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#9B9B9B")).
-		Render(s.t("settings.language") + ":")
+	b.WriteString(s.renderLanguageSelection())
+	b.WriteString("\n")
 
-	var localeItems string
+	help := styles.HelpStyle.Render(s.t("help.navigation.settings"))
+	b.WriteString(help)
+
+	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+}
+
+func (s *SettingsScreen) renderLanguageSelection() string {
+	var b strings.Builder
+
+	b.WriteString(styles.SubtitleStyle.Render(s.t("settings.language")))
+	b.WriteString("\n\n")
+
 	for i, locale := range s.locales {
-		itemStyle := styles.ListItemStyle.Copy()
+		label := s.getLocaleLabel(locale)
 
 		if i == s.cursor {
-			itemStyle = styles.SelectedListItemStyle.Copy()
+			b.WriteString("→ ")
+			b.WriteString(styles.SelectedListItemStyle.Render(fmt.Sprintf("● %s", label)))
+			if locale == s.currentLocale {
+				b.WriteString(" ✓")
+			}
+		} else {
+			b.WriteString("  ")
+			style := styles.ListItemStyle
+			if locale == s.currentLocale {
+				label = label + " ✓"
+			}
+			b.WriteString(style.Render(fmt.Sprintf("○ %s", label)))
 		}
-
-		localeLabel := s.getLocaleLabel(locale)
-		if locale == s.currentLocale {
-			localeLabel = "✓ " + localeLabel
-		}
-
-		localeItems += itemStyle.Render(localeLabel) + "\n"
+		b.WriteString("\n")
 	}
 
-	helpStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#9B9B9B")).
-		Align(lipgloss.Center).
-		Width(s.Width).
-		Padding(1, 0)
+	b.WriteString("\n")
 
-	help := helpStyle.Render(s.t("help.navigation.settings"))
-
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		"",
-		languageLabel,
-		"",
-		localeItems,
-		"",
-		help,
-	)
-
-	return lipgloss.NewStyle().
-		Padding(2, 4).
-		Width(s.Width).
-		Render(content)
+	return b.String()
 }
 
 func (s *SettingsScreen) getLocaleLabel(locale string) string {

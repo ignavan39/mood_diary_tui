@@ -183,7 +183,7 @@ func (s *HistoryScreen) View() string {
 		}
 
 		dateStr := formatters.FormatRelativeDate(entry.Date)
-		moodStr := formatters.FormatMoodLevel(entry.Level)
+		moodStr := formatters.FormatMoodLevel(entry.Level, s.translator)
 		note := formatters.TruncateNote(entry.Note, 40)
 
 		line := dateStr + " | " + moodStr + " | " + note
