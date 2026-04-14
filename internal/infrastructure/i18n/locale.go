@@ -10,10 +10,11 @@ type Locale string
 const (
 	LocaleEN Locale = "en"
 	LocaleRU Locale = "ru"
+	LocaleJA Locale = "ja"
 )
 
 func SupportedLocales() []Locale {
-	return []Locale{LocaleEN, LocaleRU}
+	return []Locale{LocaleEN, LocaleRU, LocaleJA}
 }
 
 func (l Locale) IsValid() bool {
