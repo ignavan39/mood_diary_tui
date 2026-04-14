@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 )
 
 type Step interface {
@@ -112,7 +113,7 @@ func (w *Wizard) View() string {
 			Background(styles.ErrorRed).
 			Bold(true).
 			Padding(1, 0)
-		errorView = errorStyle.Render("⚠ " + w.errorMessage)
+		errorView = errorStyle.Render(constants.WarningSign + " " + w.errorMessage)
 	}
 
 	return lipgloss.JoinVertical(
@@ -128,15 +129,12 @@ func (w *Wizard) renderProgress() string {
 	current := w.currentStep + 1
 	total := len(w.steps)
 
-	filled := "●"
-	empty := "○"
-
 	var dots string
 	for i := 0; i < total; i++ {
 		if i < current {
-			dots += filled + " "
+			dots += constants.FilledDot + " "
 		} else {
-			dots += empty + " "
+			dots += constants.EmptyDot + " "
 		}
 	}
 

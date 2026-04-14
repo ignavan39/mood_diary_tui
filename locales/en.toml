@@ -96,7 +96,7 @@ en = "English"
 ru = "Russian"
 
 [settings.confirm]
-save = "✓ Settings saved!"
+save = "Settings saved!"
 
 [mood.level]
 0 = "Terrible"

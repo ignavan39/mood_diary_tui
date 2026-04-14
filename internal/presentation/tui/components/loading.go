@@ -5,21 +5,19 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 )
 
 type LoadingIndicator struct {
 	message string
 	spinner int
-	frames  []string
 }
 
 func NewLoading(message string) *LoadingIndicator {
 	return &LoadingIndicator{
 		message: message,
 		spinner: 0,
-		frames:  []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
 	}
 }
 
@@ -31,7 +29,7 @@ func (l *LoadingIndicator) Init() tea.Cmd {
 
 func (l *LoadingIndicator) Update(msg tea.Msg) (LoadingIndicator, tea.Cmd) {
 	if _, ok := msg.(TickMsg); ok {
-		l.spinner = (l.spinner + 1) % len(l.frames)
+		l.spinner = (l.spinner + 1) % len(constants.LoadingFrames)
 		return *l, l.tick()
 	}
 	return *l, nil
@@ -44,13 +42,13 @@ func (l *LoadingIndicator) tick() tea.Cmd {
 }
 
 func (l *LoadingIndicator) View() string {
-	spinner := l.frames[l.spinner]
+	spinner := constants.LoadingFrames[l.spinner]
 
 	style := lipgloss.NewStyle().
 		Foreground(styles.PastelPink).
 		Padding(2, 0)
 
-	return style.Render(spinner + " " + l.message)
+	return style.Render(string(spinner) + " " + l.message)
 }
 
 type SuccessMessage struct {
@@ -68,7 +66,7 @@ func (s *SuccessMessage) View() string {
 		Bold(true).
 		Padding(2, 0)
 
-	return style.Render(i18n.CommonSuccessPrefixKey + " " + s.message)
+	return style.Render(constants.Checkmark + " " + s.message)
 }
 
 type ErrorMessage struct {
@@ -86,5 +84,5 @@ func (e *ErrorMessage) View() string {
 		Bold(true).
 		Padding(1, 0)
 
-	return style.Render("⚠ " + e.message)
+	return style.Render(constants.WarningSign + " " + e.message)
 }

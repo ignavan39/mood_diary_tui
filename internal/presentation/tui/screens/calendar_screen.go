@@ -202,7 +202,7 @@ func (s *CalendarScreen) View() string {
 	b.WriteString("\n\n")
 
 	if s.Error != nil {
-		b.WriteString(styles.ErrorStyle.Render(s.t("common.error_prefix") + s.Error.Error()))
+		b.WriteString(styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error()))
 		b.WriteString("\n\n")
 	}
 
@@ -226,7 +226,7 @@ func (s *CalendarScreen) View() string {
 
 	rows := s.buildCalendarGrid()
 	for i, row := range rows {
-		line := ""
+		var line strings.Builder
 		for j, cell := range row {
 			style := lipgloss.NewStyle().Width(6).Align(lipgloss.Center)
 
@@ -240,9 +240,9 @@ func (s *CalendarScreen) View() string {
 				style = style.Foreground(styles.TextMuted)
 			}
 
-			line += style.Render(cell.text)
+			line.WriteString(style.Render(cell.text))
 		}
-		b.WriteString(line + "\n")
+		b.WriteString(line.String() + "\n")
 	}
 
 	b.WriteString("\n" + styles.FooterStyle.Render(s.renderFooter()))
@@ -298,5 +298,5 @@ func (s *CalendarScreen) renderFooter() string {
 		note := formatters.TruncateNote(entry.Note, 25)
 		return fmt.Sprintf("📍 %s | %s %d/10 | %s", dateStr, entry.Level.Emoji(), entry.Level.Int(), note)
 	}
-	return fmt.Sprintf("📍 %s | %s", dateStr, s.t("calendar.no_entry"))
+	return fmt.Sprintf("📍 %s | %s", dateStr, s.t(i18n.CalendarNoEntryKey))
 }

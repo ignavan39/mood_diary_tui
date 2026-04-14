@@ -10,6 +10,7 @@ import (
 
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
@@ -132,7 +133,7 @@ func (s *MenuScreen) View() string {
 		}
 
 		if i == s.cursor {
-			cursor = "→ "
+			cursor = fmt.Sprintf("%s ", constants.ArrowRight)
 			choiceText = styles.SelectedListItemStyle.Render(choiceText)
 		} else {
 			choiceText = styles.ListItemStyle.Render(choiceText)

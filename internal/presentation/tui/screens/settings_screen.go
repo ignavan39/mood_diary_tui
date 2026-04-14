@@ -13,6 +13,8 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/components"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
@@ -170,7 +172,10 @@ func (s *SettingsScreen) View() string {
 	}
 
 	if s.Loading {
+		loading := components.NewLoading(s.t(i18n.CommonLoaderMessageKey))
 		b.WriteString(styles.InfoStyle.Render(s.t(i18n.CommonLoaderMessageKey)))
+		b.WriteString("\n")
+		b.WriteString(loading.View())
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
@@ -193,18 +198,18 @@ func (s *SettingsScreen) renderLanguageSelection() string {
 		label := s.getLocaleLabel(locale)
 
 		if i == s.cursor {
-			b.WriteString("→ ")
-			b.WriteString(styles.SelectedListItemStyle.Render(fmt.Sprintf("● %s", label)))
+			b.WriteString(constants.ArrowRight + " ")
+			b.WriteString(styles.SelectedListItemStyle.Render(fmt.Sprintf("%s %s", constants.FilledDot, label)))
 			if locale == s.currentLocale {
-				b.WriteString(i18n.CommonSuccessPrefixKey)
+				b.WriteString(constants.Checkmark)
 			}
 		} else {
 			b.WriteString("  ")
 			style := styles.ListItemStyle
 			if locale == s.currentLocale {
-				label = label + "  " + i18n.CommonSuccessPrefixKey
+				label = label + "  " + constants.Checkmark
 			}
-			b.WriteString(style.Render(fmt.Sprintf("○ %s", label)))
+			b.WriteString(style.Render(fmt.Sprintf("%s %s", constants.EmptyDot, label)))
 		}
 		b.WriteString("\n")
 	}
