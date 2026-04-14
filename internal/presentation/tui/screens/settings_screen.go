@@ -202,7 +202,7 @@ func (s *SettingsScreen) renderLanguageSelection() string {
 			b.WriteString("  ")
 			style := styles.ListItemStyle
 			if locale == s.currentLocale {
-				label = label + i18n.CommonSuccessPrefixKey
+				label = label + "  " + i18n.CommonSuccessPrefixKey
 			}
 			b.WriteString(style.Render(fmt.Sprintf("○ %s", label)))
 		}

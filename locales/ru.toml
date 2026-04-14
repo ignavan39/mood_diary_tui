@@ -1,7 +1,6 @@
 [common]
 loading = "Загрузка..."
 error_prefix = "✗ Ошибка: "
-success_prefix = "✓ "
 no_note = "(без заметки)"
 returning = "Возврат..."
 step_label = "Шаг:"

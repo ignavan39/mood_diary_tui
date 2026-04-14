@@ -1,7 +1,6 @@
 [common]
 loading = "Loading..."
 error_prefix = "✗ Error: "
-success_prefix = "✓ "
 no_note = "(no note)"
 returning = "Returning..."
 step_label = "Step:"

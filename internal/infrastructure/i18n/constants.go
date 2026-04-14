@@ -3,7 +3,7 @@ package i18n
 const (
 	CommonLoaderMessageKey = "common.loading"
 	CommonErrorPrefixKey   = "common.error_prefix"
-	CommonSuccessPrefixKey = "common.success_prefix"
+	CommonSuccessPrefixKey = "✓"
 	CommonNoNoteKey        = "common.no_note"
 	CommonReturningKey     = "common.returning"
 	CommonStepLabelKey     = "common.step_label"
