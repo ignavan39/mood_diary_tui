@@ -5,17 +5,17 @@ import (
 )
 
 var (
-	PastelPink     = lipgloss.Color("#FFB3BA")
-	PastelPeach    = lipgloss.Color("#FFDFBA")
-	PastelYellow   = lipgloss.Color("#FFFFBA")
-	PastelMint     = lipgloss.Color("#BAFFC9")
-	PastelSky      = lipgloss.Color("#BAE1FF")
-	PastelLavender = lipgloss.Color("#D4BAFF")
-	PastelRose     = lipgloss.Color("#FFBAE8")
-
-	PastelCream    = lipgloss.Color("#FFF8E7")
-	PastelGray     = lipgloss.Color("#E8E8E8")
-	PastelDarkGray = lipgloss.Color("#A8A8A8")
+	PastelPink          = lipgloss.Color("#FFB3BA")
+	PastelPeach         = lipgloss.Color("#FFDFBA")
+	PastelYellow        = lipgloss.Color("#FFFFBA")
+	PastelMint          = lipgloss.Color("#BAFFC9")
+	PastelSky           = lipgloss.Color("#BAE1FF")
+	PastelLavender      = lipgloss.Color("#D4BAFF")
+	PastelRose          = lipgloss.Color("#FFBAE8")
+	PastelDarkSlateBlue = lipgloss.Color("#483D8B")
+	PastelCream         = lipgloss.Color("#FFF8E7")
+	PastelGray          = lipgloss.Color("#E8E8E8")
+	PastelDarkGray      = lipgloss.Color("#A8A8A8")
 
 	TextDark  = lipgloss.Color("#4A4A4A")
 	TextMuted = lipgloss.Color("#8A8A8A")
@@ -91,8 +91,8 @@ var (
 			Padding(0, 2)
 
 	SelectedListItemStyle = lipgloss.NewStyle().
-				Foreground(TextLight).
-				Background(PastelLavender).
+				Foreground(PastelCream).
+				Background(PastelDarkSlateBlue).
 				Padding(0, 2).
 				Bold(true)
 

@@ -221,9 +221,9 @@ func (s *SettingsScreen) renderLanguageSelection() string {
 
 func (s *SettingsScreen) getLocaleLabel(locale string) string {
 	labels := map[string]string{
-		"en": "English",
-		"ru": "Русский",
-		"ja": "日本語",
+		"en": "[En] - English",
+		"ru": "[Ru] - Русский",
+		"ja": "[Ja] - 日本語",
 	}
 
 	if label, ok := labels[locale]; ok {

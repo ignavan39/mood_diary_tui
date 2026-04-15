@@ -27,6 +27,7 @@ type menuChoice struct {
 	screen state.ScreenType
 	params any
 	key    string
+	icon   string
 }
 
 func NewMenuScreen(translator i18n.Translator) *MenuScreen {
@@ -40,30 +41,35 @@ func NewMenuScreen(translator i18n.Translator) *MenuScreen {
 			screen: state.ScreenMoodForm,
 			params: state.MoodFormParams{Date: time.Now(), Entry: nil},
 			key:    "r",
+			icon:   constants.EditIcon,
 		},
 		{
 			label:  s.t(i18n.MenuCalendarKey),
 			screen: state.ScreenCalendar,
 			params: state.CalendarParams{InitialDate: time.Now()},
 			key:    "c",
+			icon:   constants.CalendarIcon,
 		},
 		{
 			label:  s.t(i18n.MenuHistoryKey),
 			screen: state.ScreenHistory,
 			params: nil,
 			key:    "h",
+			icon:   constants.HistoryIcon,
 		},
 		{
 			label:  s.t(i18n.MenuStatsKey),
 			screen: state.ScreenStats,
 			params: state.StatsParams{Period: "month"},
 			key:    "s",
+			icon:   constants.StatsIcon,
 		},
 		{
 			label:  s.t(i18n.MenuSettingsKey),
 			screen: state.ScreenSettings,
 			params: nil,
 			key:    "o",
+			icon:   constants.SettingsIcon,
 		},
 	}
 
@@ -127,7 +133,7 @@ func (s *MenuScreen) View() string {
 
 	for i, choice := range s.choices {
 		cursor := "  "
-		choiceText := choice.label
+		choiceText := fmt.Sprintf("%s %s", choice.icon, choice.label)
 		if choice.key != "" {
 			choiceText = choiceText + " (" + choice.key + ")"
 		}

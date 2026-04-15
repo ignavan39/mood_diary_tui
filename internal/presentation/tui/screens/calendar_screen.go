@@ -220,7 +220,7 @@ func (s *CalendarScreen) View() string {
 		weekdayName := s.t(fmt.Sprintf("date.weekday.%d", wd))
 		weekdaysStr += lipgloss.NewStyle().Width(6).Align(lipgloss.Center).Render(weekdayName)
 	}
-	b.WriteString(lipgloss.NewStyle().Foreground(styles.PastelLavender).Bold(true).Render(weekdaysStr))
+	b.WriteString(lipgloss.NewStyle().Foreground(styles.PastelDarkSlateBlue).Bold(true).Render(weekdaysStr))
 	b.WriteString("\n")
 	b.WriteString(strings.Repeat("─", 42) + "\n")
 
@@ -231,7 +231,7 @@ func (s *CalendarScreen) View() string {
 			style := lipgloss.NewStyle().Width(6).Align(lipgloss.Center)
 
 			if i == s.cursorRow && j == s.cursorCol {
-				style = style.Background(styles.PastelLavender).Foreground(styles.TextLight).Bold(true)
+				style = style.Background(styles.PastelDarkSlateBlue).Foreground(styles.TextLight).Bold(true)
 			} else if entry, ok := s.moodData[cell.date]; ok {
 
 				style = style.Foreground(styles.GetMoodColor(int(entry.Level)))

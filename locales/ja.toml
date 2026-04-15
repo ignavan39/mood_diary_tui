@@ -20,12 +20,12 @@ record_choice = "← / → で変更、 0-9 で直接入力"
 
 [menu]
 title = "気分日記・感情を記録しよう 🌸"
-record = "📝 今日の気分を記録"
-stats = "📊 統計を見る"
-history = "🗓️  記録履歴"
-exit = "❌ 終了"
-settings = "⚙️  設定"
-calendar = "📅 カレンダー"
+record = " 今日の気分を記録"
+stats = "統計を見る"
+history = "記録履歴"
+exit = "終了"
+settings = " 設定"
+calendar = "カレンダー"
 
 [record]
 title_new = "📝 気分を記録"

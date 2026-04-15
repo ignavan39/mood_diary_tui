@@ -152,7 +152,7 @@ func (s *MoodFormScreen) save() tea.Cmd {
 		var err error
 		if s.entry != nil {
 
-			err = s.service.UpdateMood(ctx, s.date, s.moodLevel, s.note)
+			err = s.service.RecordMood(ctx, s.moodLevel, s.note, &s.date)
 		} else {
 
 			err = s.service.RecordMood(ctx, s.moodLevel, s.note, &s.date)
@@ -348,7 +348,7 @@ func (s *MoodConfirmationStep) Render(width, height int) string {
 
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(styles.GetMoodColor(s.screen.moodLevel)).
+		BorderForeground(styles.PastelDarkSlateBlue).
 		Padding(1, 2).
 		Render(fmt.Sprintf(
 			s.screen.t(i18n.RecordBoxMoodKey)+"\n"+

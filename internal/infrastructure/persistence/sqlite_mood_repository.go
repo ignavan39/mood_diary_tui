@@ -3,18 +3,12 @@ package persistence
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
-)
-
-var (
-	ErrNotFound      = errors.New("mood entry not found")
-	ErrAlreadyExists = errors.New("mood entry for this date already exists")
 )
 
 type SQLiteMoodRepository struct {
@@ -25,10 +19,11 @@ func NewSQLiteMoodRepository(db *sql.DB) *SQLiteMoodRepository {
 	return &SQLiteMoodRepository{db: db}
 }
 
-func (r *SQLiteMoodRepository) Create(ctx context.Context, entry *entity.MoodEntry) error {
+func (r *SQLiteMoodRepository) Upsert(ctx context.Context, entry *entity.MoodEntry) error {
 	query := `
 		INSERT INTO mood_entries (id, date, level, note, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(date) DO UPDATE SET level=excluded.level, note=excluded.note, updated_at=excluded.updated_at
 	`
 
 	dateStr := entry.Date.Format("2006-01-02")
@@ -43,40 +38,7 @@ func (r *SQLiteMoodRepository) Create(ctx context.Context, entry *entity.MoodEnt
 	)
 
 	if err != nil {
-		if err.Error() == "UNIQUE constraint failed: mood_entries.date" {
-			return ErrAlreadyExists
-		}
 		return fmt.Errorf("failed to create mood entry: %w", err)
-	}
-
-	return nil
-}
-
-func (r *SQLiteMoodRepository) Update(ctx context.Context, entry *entity.MoodEntry) error {
-	query := `
-		UPDATE mood_entries
-		SET level = ?, note = ?, updated_at = ?
-		WHERE id = ?
-	`
-
-	result, err := r.db.ExecContext(ctx, query,
-		entry.Level.Int(),
-		entry.Note,
-		entry.UpdatedAt,
-		entry.ID.String(),
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to update mood entry: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return ErrNotFound
 	}
 
 	return nil
@@ -96,7 +58,7 @@ func (r *SQLiteMoodRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	if rowsAffected == 0 {
-		return ErrNotFound
+		return repository.ErrNotFound
 	}
 
 	return nil
@@ -124,7 +86,7 @@ func (r *SQLiteMoodRepository) FindByID(ctx context.Context, id uuid.UUID) (*ent
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, ErrNotFound
+			return nil, repository.ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to find mood entry: %w", err)
 	}
@@ -156,7 +118,7 @@ func (r *SQLiteMoodRepository) FindByDate(ctx context.Context, date time.Time) (
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, ErrNotFound
+			return nil, repository.ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to find mood entry by date: %w", err)
 	}

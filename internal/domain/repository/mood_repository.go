@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,9 +10,7 @@ import (
 )
 
 type MoodRepository interface {
-	Create(ctx context.Context, entry *entity.MoodEntry) error
-
-	Update(ctx context.Context, entry *entity.MoodEntry) error
+	Upsert(ctx context.Context, entry *entity.MoodEntry) error
 
 	Delete(ctx context.Context, id uuid.UUID) error
 
@@ -45,3 +44,7 @@ func NewMoodStatistics() *MoodStatistics {
 		Distribution: make(map[int]int),
 	}
 }
+
+var (
+	ErrNotFound = errors.New("mood entry not found")
+)

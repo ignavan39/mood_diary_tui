@@ -20,12 +20,12 @@ record_choice = "← / → to change, 0-9 for direct input"
 
 [menu]
 title = "Mood Diary • Track your emotions 🌸"
-record = "📝 Record mood today"
-stats = "📊 View statistics"
-history = "🗓️  Entry history"
-exit = "❌ Exit"
-settings = "⚙️  Settings"
-calendar = "📅 Calendar"
+record = " Record mood today"
+stats = "View statistics"
+history = "Entry history"
+exit = "Exit"
+settings = " Settings"
+calendar = "Calendar"
 
 [record]
 title_new = "📝 Record Mood"

@@ -7,7 +7,6 @@ import (
 
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
-	"github.com/ignavan39/mood-diary/internal/infrastructure/persistence"
 )
 
 var (
@@ -35,49 +34,18 @@ func (s *MoodService) RecordMood(ctx context.Context, level int, note string, da
 		targetDate = *date
 	}
 
-	existing, err := s.repo.FindByDate(ctx, targetDate)
-	if err != nil && err != persistence.ErrNotFound {
-		return err
-	}
-
-	if existing != nil {
-		return ErrMoodAlreadyRecorded
-	}
-
 	entry, err := entity.NewMoodEntry(moodLevel, note, targetDate)
 	if err != nil {
 		return err
 	}
 
-	return s.repo.Create(ctx, entry)
-}
-
-func (s *MoodService) UpdateMood(ctx context.Context, date time.Time, level int, note string) error {
-
-	moodLevel, err := entity.NewMoodLevel(level)
-	if err != nil {
-		return err
-	}
-
-	entry, err := s.repo.FindByDate(ctx, date)
-	if err != nil {
-		if err == persistence.ErrNotFound {
-			return ErrMoodNotFound
-		}
-		return err
-	}
-
-	if err := entry.Update(moodLevel, note); err != nil {
-		return err
-	}
-
-	return s.repo.Update(ctx, entry)
+	return s.repo.Upsert(ctx, entry)
 }
 
 func (s *MoodService) DeleteMood(ctx context.Context, date time.Time) error {
 	entry, err := s.repo.FindByDate(ctx, date)
 	if err != nil {
-		if err == persistence.ErrNotFound {
+		if err == repository.ErrNotFound {
 			return ErrMoodNotFound
 		}
 		return err
@@ -89,7 +57,7 @@ func (s *MoodService) DeleteMood(ctx context.Context, date time.Time) error {
 func (s *MoodService) GetMoodForDate(ctx context.Context, date time.Time) (*entity.MoodEntry, error) {
 	entry, err := s.repo.FindByDate(ctx, date)
 	if err != nil {
-		if err == persistence.ErrNotFound {
+		if err == repository.ErrNotFound {
 			return nil, ErrMoodNotFound
 		}
 		return nil, err

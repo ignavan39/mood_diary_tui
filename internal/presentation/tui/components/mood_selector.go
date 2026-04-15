@@ -95,7 +95,7 @@ func (m *MoodSelector) View() string {
 
 			style = style.
 				Background(styles.MoodColors[i]).
-				Foreground(styles.TextLight).
+				Foreground(styles.PastelDarkSlateBlue).
 				Bold(true)
 		} else {
 
