@@ -118,7 +118,10 @@ func (m *Model) navigate(to state.ScreenType, params interface{}) tea.Cmd {
 		m.current = screens.NewStatsScreen(m.service, m.translator)
 
 	case state.ScreenSettings:
-		m.current = screens.NewSettingsScreen(m.translator, m.settingsRepo)
+		m.current = screens.NewSettingsScreen(m.translator)
+
+	case state.ScreenLanguageSettings:
+		m.current = screens.NewLanguageSettingsScreen(m.translator, m.settingsRepo)
 	}
 
 	return m.current.Init()
