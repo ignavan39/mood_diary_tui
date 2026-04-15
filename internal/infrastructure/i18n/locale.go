@@ -11,10 +11,11 @@ const (
 	LocaleEN Locale = "en"
 	LocaleRU Locale = "ru"
 	LocaleJA Locale = "ja"
+	LocaleML Locale = "ml"
 )
 
 func SupportedLocales() []Locale {
-	return []Locale{LocaleEN, LocaleRU, LocaleJA}
+	return []Locale{LocaleEN, LocaleRU, LocaleJA, LocaleML}
 }
 
 func (l Locale) IsValid() bool {
