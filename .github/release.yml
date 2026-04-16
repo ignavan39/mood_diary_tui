@@ -1,4 +1,4 @@
-name: Release
+name: Release (Linux)
 
 on:
   push:
@@ -10,21 +10,12 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
-    runs-on: ${{ matrix.runner }}
+    name: Build Linux (${{ matrix.goarch }})
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - runner: ubuntu-latest
-            goos: linux
-            goarch: amd64
-
-          - runner: ubuntu-latest
-            goos: linux
-            goarch: arm64
-            cc: aarch64-linux-gnu-gcc
-            apt: gcc-aarch64-linux-gnu
+        goarch: [amd64, arm64]
 
     steps:
       - name: Checkout
@@ -37,35 +28,31 @@ jobs:
           cache: true
 
       - name: Install cross-compiler (linux/arm64)
-        if: matrix.apt != ''
+        if: matrix.goarch == 'arm64'
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ${{ matrix.apt }}
+          sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Build
         shell: bash
         env:
-          GOOS: ${{ matrix.goos }}
+          GOOS: linux
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "1"
-          CC: ${{ matrix.cc }}
+          CC: ${{ matrix.goarch == 'arm64' && 'aarch64-linux-gnu-gcc' || 'gcc' }}
         run: |
           VERSION="${{ github.ref_name }}"
-          BINARY="mood-diary"
-          [[ "${{ matrix.goos }}" == "windows" ]] && BINARY="mood-diary.exe"
-
           go build \
             -ldflags "-s -w -X main.version=${VERSION}" \
             -trimpath \
-            -o "${BINARY}" \
+            -o "mood-diary" \
             ./cmd/mood-diary
 
       - name: Package (tar.gz)
-        if: matrix.goos != 'windows'
         shell: bash
         run: |
           VERSION="${{ github.ref_name }}"
-          NAME="mood-diary_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          NAME="mood-diary_${VERSION}_linux_${{ matrix.goarch }}"
           mkdir -p "dist/${NAME}"
           cp mood-diary "dist/${NAME}/"
           cp -r locales "dist/${NAME}/"
@@ -74,24 +61,10 @@ jobs:
           tar -czf "${NAME}.tar.gz" "${NAME}"
           rm -rf "${NAME}"
 
-      - name: Package (zip)
-        if: matrix.goos == 'windows'
-        shell: bash
-        run: |
-          VERSION="${{ github.ref_name }}"
-          NAME="mood-diary_${VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}"
-          mkdir -p "dist/${NAME}"
-          cp mood-diary.exe "dist/${NAME}/"
-          cp -r locales "dist/${NAME}/"
-          cp README.md LICENSE "dist/${NAME}/" 2>/dev/null || true
-          cd dist
-          7z a "${NAME}.zip" "${NAME}"
-          rm -rf "${NAME}"
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mood-diary-${{ matrix.goos }}-${{ matrix.goarch }}
+          name: mood-diary-linux-${{ matrix.goarch }}
           path: dist/
 
   release:
@@ -108,7 +81,7 @@ jobs:
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum * > checksums.txt
+          sha256sum *.tar.gz > checksums.txt
           cat checksums.txt
 
       - name: Publish release
