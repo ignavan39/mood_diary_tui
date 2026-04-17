@@ -42,7 +42,7 @@ Beautiful terminal mood tracker with interactive TUI interface. Track your emoti
 
 ## 🚀 Installation
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ignavan39/mood_diary_tui/master/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ignavan39/mood_diary_tui/master/install.sh | sh
 ```
 
 ### Prerequisites
@@ -395,7 +395,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🚀 Установка
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ignavan39/mood_diary_tui/master/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ignavan39/mood_diary_tui/master/install.sh | sh
 ```
 ### Предварительные требования
 
