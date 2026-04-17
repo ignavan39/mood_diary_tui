@@ -17,6 +17,7 @@ const (
 	ScreenHistory
 	ScreenStats
 	ScreenSettings
+	ScreenLanguageSettings
 )
 
 type NavigateMsg struct {
@@ -120,4 +121,8 @@ func NavigateToStats(period string) tea.Cmd {
 
 func NavigateToSettings() tea.Cmd {
 	return Navigate(ScreenSettings, nil)
+}
+
+func NavigateToLanguageSettings() tea.Cmd {
+	return Navigate(ScreenLanguageSettings, nil)
 }

@@ -87,6 +87,7 @@ const (
 
 	SettingsLanguageEnKey = "settings.language.en"
 	SettingsLanguageRuKey = "settings.language.ru"
+	SettingsLanguageJaKey = "settings.language.ja"
 
 	SettingsConfirmSaveKey = "settings.confirm.save"
 
