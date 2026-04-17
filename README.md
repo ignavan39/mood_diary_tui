@@ -41,6 +41,9 @@ Beautiful terminal mood tracker with interactive TUI interface. Track your emoti
 | **UUID** | Google UUID |
 
 ## 🚀 Installation
+```bash
+curl -fsSL https://raw.githubusercontent.com/ignavan39/mood_diary_tui/master/scripts/install.sh | sh
+```
 
 ### Prerequisites
 
@@ -391,7 +394,9 @@ MIT License — see [LICENSE](LICENSE) for details.
 | **UUID** | Google UUID |
 
 ## 🚀 Установка
-
+```bash
+curl -fsSL https://raw.githubusercontent.com/ignavan39/mood_diary_tui/master/scripts/install.sh | sh
+```
 ### Предварительные требования
 
 - Go 1.21 или выше
