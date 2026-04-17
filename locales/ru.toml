@@ -91,6 +91,7 @@ success_edit = "✓ Язык успешно обновлен!"
 [settings.language]
 en = "Английский"
 ru = "Русский"
+ja = "Японский"
 
 [mood.level]
 0 = "Ужасно"

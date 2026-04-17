@@ -94,6 +94,7 @@ success_edit = "✓ Language changed successfully!"
 [settings.language]
 en = "English"
 ru = "Russian"
+ja = "Japanese"
 
 [settings.confirm]
 save = "Settings saved!"

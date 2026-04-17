@@ -31,10 +31,15 @@ type LanguageSettingsScreen struct {
 }
 
 func NewLanguageSettingsScreen(translator i18n.Translator, settingsRepo repository.SettingsRepository) *LanguageSettingsScreen {
+	supported := i18n.SupportedLocales()
+	locales := make([]string, len(supported))
+	for i, l := range supported {
+		locales[i] = string(l)
+	}
 	return &LanguageSettingsScreen{
 		translator:   translator,
 		settingsRepo: settingsRepo,
-		locales:      []string{"en", "ru", "ja"},
+		locales:      locales,
 	}
 }
 
@@ -220,14 +225,10 @@ func (s *LanguageSettingsScreen) renderLanguageSelection() string {
 }
 
 func (s *LanguageSettingsScreen) getLocaleLabel(locale string) string {
-	labels := map[string]string{
-		"en": "[En] - English",
-		"ru": "[Ru] - Русский",
-		"ja": "[Ja] - 日本語",
+	key := "settings.language." + locale
+	name := s.t(key)
+	if name == key {
+		return locale
 	}
-
-	if label, ok := labels[locale]; ok {
-		return label
-	}
-	return locale
+	return fmt.Sprintf("[%s] - %s", strings.ToUpper(locale), name)
 }
