@@ -34,7 +34,7 @@ func NewSettingsScreen(translator i18n.Translator, settingsRepo repository.Setti
 	return &SettingsScreen{
 		translator:   translator,
 		settingsRepo: settingsRepo,
-		locales:      []string{"en", "ru", "ja"},
+		locales: []string{"en", "ru", "ja", "ml"},
 	}
 }
 
@@ -224,6 +224,7 @@ func (s *SettingsScreen) getLocaleLabel(locale string) string {
 		"en": "[En] - English",
 		"ru": "[Ru] - Русский",
 		"ja": "[Ja] - 日本語",
+		"ml": "[Ml] - മലയാളം",
 	}
 
 	if label, ok := labels[locale]; ok {
