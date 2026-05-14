@@ -248,6 +248,8 @@ func (s *CalendarScreen) View() string {
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
 	}
 
+	cellWidth := s.calculateCellWidth()
+
 	weekdaysOrder := []time.Weekday{
 		time.Monday, time.Tuesday, time.Wednesday, time.Thursday,
 		time.Friday, time.Saturday, time.Sunday,
@@ -255,11 +257,12 @@ func (s *CalendarScreen) View() string {
 	weekdaysStr := ""
 	for _, wd := range weekdaysOrder {
 		weekdayName := s.t(fmt.Sprintf("date.weekday.%d", wd))
-		weekdaysStr += lipgloss.NewStyle().Width(6).Align(lipgloss.Center).Render(weekdayName)
+		weekdaysStr += lipgloss.NewStyle().Width(cellWidth).Align(lipgloss.Center).Render(weekdayName)
 	}
+
 	b.WriteString(lipgloss.NewStyle().Foreground(styles.PastelDarkSlateBlue).Bold(true).Render(weekdaysStr))
 	b.WriteString("\n")
-	b.WriteString(strings.Repeat("─", 42) + "\n")
+	b.WriteString(strings.Repeat("─", cellWidth*7) + "\n")
 
 	rows := s.buildCalendarGrid()
 	if s.viewMode == viewHeatmap {
@@ -268,7 +271,7 @@ func (s *CalendarScreen) View() string {
 	for i, row := range rows {
 		var line strings.Builder
 		for j, cell := range row {
-			style := lipgloss.NewStyle().Width(6).Align(lipgloss.Center)
+			style := lipgloss.NewStyle().Width(cellWidth).Align(lipgloss.Center)
 
 			if i == s.cursorRow && j == s.cursorCol {
 				style = style.Background(styles.PastelDarkSlateBlue).Foreground(styles.TextLight).Bold(true)
@@ -293,6 +296,16 @@ func (s *CalendarScreen) View() string {
 	b.WriteString("\n" + styles.HelpStyle.Render(s.t("help.navigation.calendar")))
 
 	return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+}
+
+func (s *CalendarScreen) calculateCellWidth() int {
+	if s.Width < 60 {
+		return 4
+	}
+	if s.Width < 80 {
+		return 5
+	}
+	return 6
 }
 
 type calendarCell struct {

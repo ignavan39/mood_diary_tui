@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -25,7 +26,14 @@ type Model struct {
 
 	width  int
 	height int
+
+	terminalReady bool
 }
+
+const (
+	MinWidth  = 50
+	MinHeight = 20
+)
 
 func NewModel(
 	ctx context.Context,
@@ -53,8 +61,13 @@ func (m *Model) Init() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
+		if msg.Width < MinWidth || msg.Height < MinHeight {
+			m.terminalReady = false
+		} else {
+			m.terminalReady = true
+			m.width = msg.Width
+			m.height = msg.Height
+		}
 
 		var cmd tea.Cmd
 		m.current, cmd = m.current.Update(msg)
@@ -87,6 +100,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) View() string {
+	if !m.terminalReady {
+		return "\n\n  Please resize your terminal.\n  Minimum size: " + 
+			fmt.Sprintf("%dx%d", MinWidth, MinHeight) + "\n\n"
+	}
 	return m.current.View()
 }
 

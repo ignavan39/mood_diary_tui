@@ -167,8 +167,10 @@ func (s *StatsScreen) View() string {
 	b.WriteString(s.renderDistribution())
 	b.WriteString("\n\n")
 
-	b.WriteString(s.renderSparkline())
-	b.WriteString("\n\n")
+	if s.Height > 25 {
+		b.WriteString(s.renderSparkline())
+		b.WriteString("\n\n")
+	}
 
 	help := styles.HelpStyle.Render(s.t(i18n.HelpNavigationStatsKey))
 	b.WriteString(help)
@@ -237,26 +239,54 @@ func (s *StatsScreen) renderStatsCards() string {
 		styles.PastelMint,
 	)
 
-	return lipgloss.JoinHorizontal(lipgloss.Left,
-		totalCard, "  ",
-		avgCard, "  ",
-		trendCard, "  ",
-		rangeCard,
+	cardWidth := s.calculateStatCardWidth()
+	spacing := "  "
+
+	rowWidth := cardWidth*4 + len(spacing)*3
+
+	if rowWidth > s.Width-4 {
+		row1 := lipgloss.JoinHorizontal(lipgloss.Top,
+			totalCard, spacing, avgCard,
+		)
+		row2 := lipgloss.JoinHorizontal(lipgloss.Top,
+			trendCard, spacing, rangeCard,
+		)
+		return lipgloss.JoinVertical(lipgloss.Left, row1, row2)
+	}
+
+	return lipgloss.JoinHorizontal(lipgloss.Top,
+		totalCard, spacing, avgCard, spacing, trendCard, spacing, rangeCard,
 	)
 }
 
 func (s *StatsScreen) createStatCard(title, value string, color lipgloss.Color) string {
+	width := s.calculateStatCardWidth()
+
 	titleStyle := lipgloss.NewStyle().
 		Foreground(styles.TextMuted).
-		Bold(true)
+		Bold(true).
+		Width(width - 2)
 
 	valueStyle := lipgloss.NewStyle().
 		Foreground(color).
-		Bold(true)
+		Bold(true).
+		Width(width - 2)
+
+	cardStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.PastelSky).
+		Padding(1, 1).
+		Width(width)
 
 	content := titleStyle.Render(title) + "\n" + valueStyle.Render(value)
+	return cardStyle.Render(content)
+}
 
-	return styles.BoxStyle.Render(content)
+func (s *StatsScreen) calculateStatCardWidth() int {
+	if s.Width < 70 {
+		return 12
+	}
+	return 15
 }
 
 func (s *StatsScreen) PeriodLabel(p usecase.Period) string {
@@ -326,7 +356,7 @@ func (s *StatsScreen) renderDistribution() string {
 			maxCount = 1
 		}
 
-		barWidth := int(float64(count) / float64(maxCount) * 20)
+		barWidth := int(float64(count) / float64(maxCount) * float64(s.barWidth()))
 		if count > 0 && barWidth == 0 {
 			barWidth = 1
 		}
@@ -341,4 +371,14 @@ func (s *StatsScreen) renderDistribution() string {
 	}
 
 	return b.String()
+}
+
+func (s *StatsScreen) barWidth() int {
+	if s.Width < 60 {
+		return 10
+	}
+	if s.Width < 80 {
+		return 15
+	}
+	return 20
 }
