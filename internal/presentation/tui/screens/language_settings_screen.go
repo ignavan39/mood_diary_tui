@@ -126,12 +126,12 @@ func (s *LanguageSettingsScreen) View() string {
 	b.WriteString("\n\n")
 
 	if s.Error != nil {
-		b.WriteString(styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error()))
+		b.WriteString(styles.ErrorStyle(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error()))
 		b.WriteString("\n\n")
 	}
 
 	if s.saved {
-		b.WriteString(styles.SuccessStyle.Render(s.t(i18n.SettingsSuccessEditKey)))
+		b.WriteString(styles.SuccessStyle(s.t(i18n.SettingsSuccessEditKey)))
 		b.WriteString("\n\n")
 		b.WriteString(styles.HelpStyle.Render(s.t(i18n.CommonReturningKey)))
 		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
@@ -160,7 +160,7 @@ func (s *LanguageSettingsScreen) renderLanguageSelection() string {
 			b.WriteString(constants.ArrowRight + " ")
 			if isCurrent {
 				b.WriteString(styles.SelectedListItemStyle.Render(
-					fmt.Sprintf("%s %s %s", constants.FilledDot, label, constants.Checkmark)))
+					fmt.Sprintf("%s %s %s", constants.FilledDot, label, constants.Emoji.Checkmark)))
 			} else {
 				b.WriteString(styles.SelectedListItemStyle.Render(
 					fmt.Sprintf("%s %s", constants.FilledDot, label)))
@@ -169,7 +169,7 @@ func (s *LanguageSettingsScreen) renderLanguageSelection() string {
 			b.WriteString("  ")
 			if isCurrent {
 				b.WriteString(styles.ListItemStyle.Render(
-					fmt.Sprintf("%s %s %s", constants.EmptyDot, label, constants.Checkmark)))
+					fmt.Sprintf("%s %s %s", constants.EmptyDot, label, constants.Emoji.Checkmark)))
 			} else {
 				b.WriteString(styles.ListItemStyle.Render(
 					fmt.Sprintf("%s %s", constants.EmptyDot, label)))

@@ -2,6 +2,8 @@ package styles
 
 import (
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 )
 
 var (
@@ -108,18 +110,6 @@ var (
 				BorderForeground(PastelLavender).
 				Padding(0, 1)
 
-	SuccessStyle = lipgloss.NewStyle().
-			Foreground(TextDark).
-			Background(SuccessGreen).
-			Padding(0, 2).
-			Bold(true)
-
-	ErrorStyle = lipgloss.NewStyle().
-			Foreground(TextDark).
-			Background(ErrorRed).
-			Padding(0, 2).
-			Bold(true)
-
 	InfoStyle = lipgloss.NewStyle().
 			Foreground(TextDark).
 			Background(InfoBlue).
@@ -146,6 +136,24 @@ var (
 			Foreground(TextMuted).
 			Italic(true)
 )
+
+func SuccessStyle(text string) string {
+	return lipgloss.NewStyle().
+		Foreground(TextDark).
+		Background(SuccessGreen).
+		Padding(0, 2).
+		Bold(true).
+		Render(constants.Emoji.Checkmark + " " + text)
+}
+
+func ErrorStyle(text string) string {
+	return lipgloss.NewStyle().
+		Foreground(TextDark).
+		Background(ErrorRed).
+		Padding(0, 2).
+		Bold(true).
+		Render(constants.Emoji.Crossmark + " " + text)
+}
 
 func GetMoodColor(level int) lipgloss.Color {
 	if level < 0 {

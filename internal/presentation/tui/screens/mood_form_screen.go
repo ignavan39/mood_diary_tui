@@ -14,6 +14,7 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/formatters"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/forms"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
@@ -126,7 +127,7 @@ func (s *MoodFormScreen) View() string {
 		if s.entry != nil {
 			successKey = i18n.RecordSuccessEditKey
 		}
-		success := styles.SuccessStyle.Render(s.t(successKey))
+		success := styles.SuccessStyle(s.t(successKey))
 		b.WriteString(success)
 		b.WriteString("\n\n")
 		b.WriteString(styles.HelpStyle.Render(s.t(i18n.CommonReturningKey)))
@@ -139,7 +140,7 @@ func (s *MoodFormScreen) View() string {
 	}
 
 	if s.Error != nil {
-		errMsg := styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error())
+		errMsg := styles.ErrorStyle(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error())
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
@@ -406,7 +407,7 @@ func (s *MoodDateStep) Render(width, height int) string {
 		Bold(true).
 		Padding(0, 2)
 
-	label := fmt.Sprintf("📅 %s", dateStr)
+	label := fmt.Sprintf("%s %s", constants.Emoji.Calendar, dateStr)
 	b.WriteString(dateStyle.Render(label))
 	b.WriteString("\n\n")
 

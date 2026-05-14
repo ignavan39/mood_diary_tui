@@ -12,6 +12,7 @@ import (
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/components"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/formatters"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
@@ -177,7 +178,7 @@ func (s *HistoryScreen) View() string {
 		Align(lipgloss.Center).
 		Width(s.Width)
 
-	header := headerStyle.Render("📜 " + s.t(i18n.HistoryTitleKey))
+	header := headerStyle.Render(constants.Emoji.History + " " + s.t(i18n.HistoryTitleKey))
 
 	if s.confirmDlg != nil {
 		return lipgloss.JoinVertical(

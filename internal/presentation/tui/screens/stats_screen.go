@@ -13,6 +13,7 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/repository"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
@@ -139,7 +140,7 @@ func (s *StatsScreen) View() string {
 	b.WriteString("\n\n")
 
 	if s.Error != nil {
-		errMsg := styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error())
+		errMsg := styles.ErrorStyle(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error())
 		b.WriteString(errMsg)
 		b.WriteString("\n\n")
 	}
@@ -200,11 +201,11 @@ func (s *StatsScreen) renderPeriodSelector() string {
 
 func (s *StatsScreen) trendLabel() string {
 	if s.stats.Trend > 0.5 {
-		return s.t(i18n.StatsTrendUpKey)
+		return constants.Emoji.ArrowUp + " " + s.t(i18n.StatsTrendUpKey)
 	} else if s.stats.Trend < -0.5 {
-		return s.t(i18n.StatsTrendDownKey)
+		return constants.Emoji.ArrowDown + " " + s.t(i18n.StatsTrendDownKey)
 	}
-	return s.t(i18n.StatsTrendStableKey)
+	return constants.Emoji.ArrowStable + " " + s.t(i18n.StatsTrendStableKey)
 }
 
 func (s *StatsScreen) renderStatsCards() string {

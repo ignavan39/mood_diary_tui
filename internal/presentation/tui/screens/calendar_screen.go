@@ -14,6 +14,7 @@ import (
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/components"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/constants"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/formatters"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
@@ -32,7 +33,16 @@ type CalendarScreen struct {
 	cursorRow  int
 	cursorCol  int
 	confirmDlg *components.ConfirmationDialog
+
+	viewMode calendarViewMode
 }
+
+type calendarViewMode string
+
+const (
+	viewEmoji   calendarViewMode = "emoji"
+	viewHeatmap calendarViewMode = "heatmap"
+)
 
 func NewCalendarScreen(ctx context.Context, service *usecase.MoodService, translator i18n.Translator) *CalendarScreen {
 	now := time.Now()
@@ -43,6 +53,7 @@ func NewCalendarScreen(ctx context.Context, service *usecase.MoodService, transl
 		currentMonth: time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC),
 		selectedDate: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
 		moodData:     make(map[time.Time]*entity.MoodEntry),
+		viewMode:     viewEmoji,
 	}
 }
 
@@ -121,6 +132,13 @@ func (s *CalendarScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 			msg := fmt.Sprintf(s.t(i18n.EditDeleteWarningKey), formatters.FormatDate(entry.Date))
 			s.confirmDlg = components.NewConfirmation(msg, s.translator, s.deleteMood(entry), nil)
 			return s, nil
+		}
+
+	case "m":
+		if s.viewMode == viewEmoji {
+			s.viewMode = viewHeatmap
+		} else {
+			s.viewMode = viewEmoji
 		}
 
 	case "esc", "q":
@@ -211,7 +229,7 @@ func (s *CalendarScreen) View() string {
 	var b strings.Builder
 
 	monthName := s.t(fmt.Sprintf("date.month.%d", s.currentMonth.Month()))
-	header := styles.HeaderStyle.Render(fmt.Sprintf("📅 %s %d", monthName, s.currentMonth.Year()))
+	header := styles.HeaderStyle.Render(fmt.Sprintf("%s %s %d", constants.Emoji.Calendar, monthName, s.currentMonth.Year()))
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
@@ -221,7 +239,7 @@ func (s *CalendarScreen) View() string {
 	}
 
 	if s.Error != nil {
-		b.WriteString(styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error()))
+		b.WriteString(styles.ErrorStyle(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error()))
 		b.WriteString("\n\n")
 	}
 
@@ -244,6 +262,9 @@ func (s *CalendarScreen) View() string {
 	b.WriteString(strings.Repeat("─", 42) + "\n")
 
 	rows := s.buildCalendarGrid()
+	if s.viewMode == viewHeatmap {
+		rows = s.buildHeatmapGrid()
+	}
 	for i, row := range rows {
 		var line strings.Builder
 		for j, cell := range row {
@@ -251,12 +272,15 @@ func (s *CalendarScreen) View() string {
 
 			if i == s.cursorRow && j == s.cursorCol {
 				style = style.Background(styles.PastelDarkSlateBlue).Foreground(styles.TextLight).Bold(true)
+			} else if cell.bgColor != "" {
+				style = style.Background(cell.bgColor)
+				if cell.date.Month() != s.currentMonth.Month() {
+					style = style.Foreground(styles.TextMuted)
+				} else {
+					style = style.Foreground(styles.TextLight)
+				}
 			} else if entry, ok := s.moodData[cell.date]; ok {
-
 				style = style.Foreground(styles.GetMoodColor(int(entry.Level)))
-			} else if cell.date.Month() != s.currentMonth.Month() {
-
-				style = style.Foreground(styles.TextMuted)
 			}
 
 			line.WriteString(style.Render(cell.text))
@@ -272,11 +296,20 @@ func (s *CalendarScreen) View() string {
 }
 
 type calendarCell struct {
-	date time.Time
-	text string
+	date    time.Time
+	text    string
+	bgColor lipgloss.Color
 }
 
 func (s *CalendarScreen) buildCalendarGrid() [][]calendarCell {
+	return s.buildGrid(viewEmoji)
+}
+
+func (s *CalendarScreen) buildHeatmapGrid() [][]calendarCell {
+	return s.buildGrid(viewHeatmap)
+}
+
+func (s *CalendarScreen) buildGrid(mode calendarViewMode) [][]calendarCell {
 	year, month := s.currentMonth.Year(), s.currentMonth.Month()
 	firstDay := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 
@@ -295,7 +328,17 @@ func (s *CalendarScreen) buildCalendarGrid() [][]calendarCell {
 			cell := calendarCell{date: current}
 
 			if current.Month() != month {
-				cell.text = lipgloss.NewStyle().Foreground(styles.TextMuted).Render("  ")
+				cell.bgColor = lipgloss.Color("#F0F0F0")
+				cell.text = "  "
+			} else if mode == viewHeatmap {
+				entry, ok := s.moodData[current]
+				if ok {
+					cell.bgColor = styles.GetMoodColor(int(entry.Level))
+					cell.text = fmt.Sprintf("%2d", current.Day())
+				} else {
+					cell.bgColor = styles.PastelGray
+					cell.text = fmt.Sprintf("%2d", current.Day())
+				}
 			} else {
 				dayNum := fmt.Sprintf("%2d", current.Day())
 				if entry, ok := s.moodData[current]; ok {
@@ -313,9 +356,13 @@ func (s *CalendarScreen) buildCalendarGrid() [][]calendarCell {
 
 func (s *CalendarScreen) renderFooter() string {
 	dateStr := formatters.FormatDate(s.selectedDate)
+	modeIcon := constants.Emoji.Calendar
+	if s.viewMode == viewHeatmap {
+		modeIcon = constants.Emoji.Heatmap
+	}
 	if entry, ok := s.moodData[s.selectedDate]; ok {
 		note := formatters.TruncateNote(entry.Note, 25)
-		return fmt.Sprintf("📍 %s | %s %d/10 | %s", dateStr, entry.Level.Emoji(), entry.Level.Int(), note)
+		return fmt.Sprintf("%s %s | %s %d/10 | %s", modeIcon, dateStr, entry.Level.Emoji(), entry.Level.Int(), note)
 	}
-	return fmt.Sprintf("📍 %s | %s", dateStr, s.t(i18n.CalendarNoEntryKey))
+	return fmt.Sprintf("%s %s | %s", modeIcon, dateStr, s.t(i18n.CalendarNoEntryKey))
 }
