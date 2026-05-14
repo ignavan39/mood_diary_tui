@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -21,13 +22,15 @@ type settingsChoice struct {
 type SettingsScreen struct {
 	state.BaseState
 
+	ctx        context.Context
 	translator i18n.Translator
 	choices    []settingsChoice
 	cursor     int
 }
 
-func NewSettingsScreen(translator i18n.Translator) *SettingsScreen {
+func NewSettingsScreen(ctx context.Context, translator i18n.Translator) *SettingsScreen {
 	s := &SettingsScreen{
+		ctx:        ctx,
 		translator: translator,
 	}
 	s.choices = []settingsChoice{

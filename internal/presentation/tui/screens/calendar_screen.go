@@ -13,6 +13,7 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/components"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/formatters"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
@@ -20,6 +21,7 @@ import (
 type CalendarScreen struct {
 	state.BaseState
 
+	ctx        context.Context
 	service    *usecase.MoodService
 	translator i18n.Translator
 
@@ -27,13 +29,15 @@ type CalendarScreen struct {
 	selectedDate time.Time
 	moodData     map[time.Time]*entity.MoodEntry
 
-	cursorRow int
-	cursorCol int
+	cursorRow  int
+	cursorCol  int
+	confirmDlg *components.ConfirmationDialog
 }
 
-func NewCalendarScreen(service *usecase.MoodService, translator i18n.Translator) *CalendarScreen {
+func NewCalendarScreen(ctx context.Context, service *usecase.MoodService, translator i18n.Translator) *CalendarScreen {
 	now := time.Now()
 	return &CalendarScreen{
+		ctx:          ctx,
 		service:      service,
 		translator:   translator,
 		currentMonth: time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC),
@@ -55,6 +59,14 @@ func (s *CalendarScreen) Init() tea.Cmd {
 }
 
 func (s *CalendarScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
+	if s.confirmDlg != nil && !s.confirmDlg.IsDone() {
+		cmd := s.confirmDlg.Update(msg)
+		if s.confirmDlg.IsDone() {
+			s.confirmDlg = nil
+		}
+		return s, cmd
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		s.SetSize(msg.Width, msg.Height)
@@ -106,11 +118,13 @@ func (s *CalendarScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 
 		entry := s.moodData[s.selectedDate]
 		if entry != nil {
-			return s, s.deleteMood(entry)
+			msg := fmt.Sprintf(s.t(i18n.EditDeleteWarningKey), formatters.FormatDate(entry.Date))
+			s.confirmDlg = components.NewConfirmation(msg, s.translator, s.deleteMood(entry), nil)
+			return s, nil
 		}
 
 	case "esc", "q":
-		return s, state.NavigateToMenu()
+		return s, state.NavigateBack()
 	}
 
 	return s, nil
@@ -163,16 +177,17 @@ func (s *CalendarScreen) updateCursorPosition() {
 
 func (s *CalendarScreen) loadMonthData() tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-		entries, err := s.service.GetAllMoods(ctx)
+		start := time.Date(s.currentMonth.Year(), s.currentMonth.Month(), 1, 0, 0, 0, 0, time.UTC)
+		end := start.AddDate(0, 1, -1)
+		end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 0, time.UTC)
+
+		entries, err := s.service.GetMoodsByDateRange(s.ctx, start, end)
 
 		data := make(map[time.Time]*entity.MoodEntry)
 		if err == nil {
 			for _, e := range entries {
 				day := time.Date(e.Date.Year(), e.Date.Month(), e.Date.Day(), 0, 0, 0, 0, time.UTC)
-				if day.Year() == s.currentMonth.Year() && day.Month() == s.currentMonth.Month() {
-					data[day] = e
-				}
+				data[day] = e
 			}
 		} else {
 			return state.ErrorMsg{Error: err}
@@ -184,8 +199,7 @@ func (s *CalendarScreen) loadMonthData() tea.Cmd {
 
 func (s *CalendarScreen) deleteMood(entry *entity.MoodEntry) tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-		err := s.service.DeleteMood(ctx, entry.Date)
+		err := s.service.DeleteMood(s.ctx, entry.Date)
 		if err != nil {
 			return state.ErrorMsg{Error: err}
 		}
@@ -200,6 +214,11 @@ func (s *CalendarScreen) View() string {
 	header := styles.HeaderStyle.Render(fmt.Sprintf("📅 %s %d", monthName, s.currentMonth.Year()))
 	b.WriteString(header)
 	b.WriteString("\n\n")
+
+	if s.confirmDlg != nil {
+		b.WriteString(s.confirmDlg.View())
+		return lipgloss.NewStyle().Padding(2, 4).Render(b.String())
+	}
 
 	if s.Error != nil {
 		b.WriteString(styles.ErrorStyle.Render(s.t(i18n.CommonErrorPrefixKey) + s.Error.Error()))

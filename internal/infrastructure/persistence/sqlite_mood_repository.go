@@ -146,15 +146,15 @@ func (r *SQLiteMoodRepository) FindByDateRange(ctx context.Context, start, end t
 	return r.scanMoodEntries(rows)
 }
 
-func (r *SQLiteMoodRepository) FindRecent(ctx context.Context, limit int) ([]*entity.MoodEntry, error) {
+func (r *SQLiteMoodRepository) FindRecent(ctx context.Context, limit int, offset int) ([]*entity.MoodEntry, error) {
 	query := `
 		SELECT id, date, level, note, created_at, updated_at
 		FROM mood_entries
 		ORDER BY date DESC
-		LIMIT ?
+		LIMIT ? OFFSET ?
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, limit)
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find recent mood entries: %w", err)
 	}
@@ -187,9 +187,9 @@ func (r *SQLiteMoodRepository) GetStatistics(ctx context.Context, start, end tim
 	query := `
 		SELECT 
 			COUNT(*) as total,
-			AVG(level) as average,
-			MIN(level) as min_level,
-			MAX(level) as max_level
+			COALESCE(AVG(level), 0) as average,
+			COALESCE(MIN(level), 0) as min_level,
+			COALESCE(MAX(level), 0) as max_level
 		FROM mood_entries
 		WHERE date BETWEEN ? AND ?
 	`

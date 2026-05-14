@@ -19,6 +19,7 @@ import (
 type StatsScreen struct {
 	state.BaseState
 
+	ctx        context.Context
 	service    *usecase.MoodService
 	translator i18n.Translator
 
@@ -27,8 +28,9 @@ type StatsScreen struct {
 	entries []*entity.MoodEntry
 }
 
-func NewStatsScreen(service *usecase.MoodService, translator i18n.Translator) *StatsScreen {
+func NewStatsScreen(ctx context.Context, service *usecase.MoodService, translator i18n.Translator) *StatsScreen {
 	return &StatsScreen{
+		ctx:        ctx,
 		service:    service,
 		translator: translator,
 		period:     usecase.PeriodMonth,
@@ -83,7 +85,7 @@ func (s *StatsScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 		return s, s.loadStats()
 
 	case "esc", "q":
-		return s, state.NavigateToMenu()
+		return s, state.NavigateBack()
 	}
 
 	return s, nil
@@ -111,14 +113,13 @@ func (s *StatsScreen) changePeriod(delta int) {
 
 func (s *StatsScreen) loadStats() tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-		stats, err := s.service.GetStatistics(ctx, s.period)
+		stats, err := s.service.GetStatistics(s.ctx, s.period)
 		if err != nil {
 			return state.ErrorMsg{Error: err}
 		}
 
 		start, end := s.period.DateRange()
-		entries, err := s.service.GetMoodsByDateRange(ctx, start, end)
+		entries, err := s.service.GetMoodsByDateRange(s.ctx, start, end)
 		if err != nil {
 			return state.ErrorMsg{Error: err}
 		}
@@ -165,6 +166,9 @@ func (s *StatsScreen) View() string {
 	b.WriteString(s.renderDistribution())
 	b.WriteString("\n\n")
 
+	b.WriteString(s.renderSparkline())
+	b.WriteString("\n\n")
+
 	help := styles.HelpStyle.Render(s.t(i18n.HelpNavigationStatsKey))
 	b.WriteString(help)
 
@@ -194,6 +198,15 @@ func (s *StatsScreen) renderPeriodSelector() string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, items...)
 }
 
+func (s *StatsScreen) trendLabel() string {
+	if s.stats.Trend > 0.5 {
+		return s.t(i18n.StatsTrendUpKey)
+	} else if s.stats.Trend < -0.5 {
+		return s.t(i18n.StatsTrendDownKey)
+	}
+	return s.t(i18n.StatsTrendStableKey)
+}
+
 func (s *StatsScreen) renderStatsCards() string {
 	if s.stats == nil {
 		return ""
@@ -211,6 +224,12 @@ func (s *StatsScreen) renderStatsCards() string {
 		styles.GetMoodColor(int(s.stats.Average+0.5)),
 	)
 
+	trendCard := s.createStatCard(
+		s.t(i18n.StatsTrendKey),
+		s.trendLabel(),
+		styles.PastelLavender,
+	)
+
 	rangeCard := s.createStatCard(
 		s.t(i18n.StatsRangeKey),
 		fmt.Sprintf("%d - %d", s.stats.MinLevel, s.stats.MaxLevel),
@@ -220,6 +239,7 @@ func (s *StatsScreen) renderStatsCards() string {
 	return lipgloss.JoinHorizontal(lipgloss.Left,
 		totalCard, "  ",
 		avgCard, "  ",
+		trendCard, "  ",
 		rangeCard,
 	)
 }
@@ -253,6 +273,34 @@ func (s *StatsScreen) PeriodLabel(p usecase.Period) string {
 	default:
 		return "Unknown"
 	}
+}
+
+func (s *StatsScreen) renderSparkline() string {
+	if len(s.entries) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString(styles.SubtitleStyle.Render(s.t(i18n.StatsDynamicsKey)))
+	b.WriteString("\n\n")
+
+	levels := make([]float64, len(s.entries))
+	for i, e := range s.entries {
+		levels[i] = float64(e.Level.Int())
+	}
+
+	sparkline := styles.Sparkline(levels)
+	b.WriteString(sparkline)
+	b.WriteString("\n")
+
+	startDate := s.entries[len(s.entries)-1].Date.Format("02.01")
+	endDate := s.entries[0].Date.Format("02.01")
+	dateLabel := lipgloss.NewStyle().
+		Foreground(styles.TextMuted).
+		Render(fmt.Sprintf("%s — %s", startDate, endDate))
+	b.WriteString(dateLabel)
+
+	return b.String()
 }
 
 func (s *StatsScreen) renderDistribution() string {

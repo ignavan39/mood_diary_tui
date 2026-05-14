@@ -70,10 +70,14 @@ func (s *MoodService) GetTodayMood(ctx context.Context) (*entity.MoodEntry, erro
 }
 
 func (s *MoodService) GetRecentMoods(ctx context.Context, limit int) ([]*entity.MoodEntry, error) {
+	return s.GetRecentMoodsWithOffset(ctx, limit, 0)
+}
+
+func (s *MoodService) GetRecentMoodsWithOffset(ctx context.Context, limit int, offset int) ([]*entity.MoodEntry, error) {
 	if limit <= 0 {
 		limit = 30
 	}
-	return s.repo.FindRecent(ctx, limit)
+	return s.repo.FindRecent(ctx, limit, offset)
 }
 
 func (s *MoodService) GetMoodsForPeriod(ctx context.Context, period Period) ([]*entity.MoodEntry, error) {
@@ -105,7 +109,10 @@ const (
 )
 
 func (p Period) DateRange() (start, end time.Time) {
-	now := time.Now()
+	return p.DateRangeAt(time.Now())
+}
+
+func (p Period) DateRangeAt(now time.Time) (start, end time.Time) {
 	end = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
 
 	switch p {

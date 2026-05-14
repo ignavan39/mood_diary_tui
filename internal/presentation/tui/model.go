@@ -41,7 +41,7 @@ func NewModel(
 		currentType:  state.ScreenMenu,
 	}
 
-	m.current = screens.NewMenuScreen(translator)
+	m.current = screens.NewMenuScreen(ctx, translator)
 
 	return m
 }
@@ -75,6 +75,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case state.NavigateMsg:
 		return m, m.navigate(msg.To, msg.Params)
+
+	case state.NavigateBackMsg:
+		return m, m.navigateBack()
 	}
 
 	var cmd tea.Cmd
@@ -96,11 +99,12 @@ func (m *Model) navigate(to state.ScreenType, params interface{}) tea.Cmd {
 
 	switch to {
 	case state.ScreenMenu:
-		m.current = screens.NewMenuScreen(m.translator)
+		m.current = screens.NewMenuScreen(m.ctx, m.translator)
 
 	case state.ScreenMoodForm:
 		if p, ok := params.(state.MoodFormParams); ok {
 			m.current = screens.NewMoodFormScreen(
+				m.ctx,
 				m.service,
 				m.translator,
 				p.Date,
@@ -109,19 +113,19 @@ func (m *Model) navigate(to state.ScreenType, params interface{}) tea.Cmd {
 		}
 
 	case state.ScreenCalendar:
-		m.current = screens.NewCalendarScreen(m.service, m.translator)
+		m.current = screens.NewCalendarScreen(m.ctx, m.service, m.translator)
 
 	case state.ScreenHistory:
-		m.current = screens.NewHistoryScreen(m.service, m.translator)
+		m.current = screens.NewHistoryScreen(m.ctx, m.service, m.translator)
 
 	case state.ScreenStats:
-		m.current = screens.NewStatsScreen(m.service, m.translator)
+		m.current = screens.NewStatsScreen(m.ctx, m.service, m.translator)
 
 	case state.ScreenSettings:
-		m.current = screens.NewSettingsScreen(m.translator)
+		m.current = screens.NewSettingsScreen(m.ctx, m.translator)
 
 	case state.ScreenLanguageSettings:
-		m.current = screens.NewLanguageSettingsScreen(m.translator, m.settingsRepo)
+		m.current = screens.NewLanguageSettingsScreen(m.ctx, m.translator, m.settingsRepo)
 	}
 
 	return m.current.Init()

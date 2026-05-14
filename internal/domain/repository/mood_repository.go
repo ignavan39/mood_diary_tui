@@ -20,7 +20,7 @@ type MoodRepository interface {
 
 	FindByDateRange(ctx context.Context, start, end time.Time) ([]*entity.MoodEntry, error)
 
-	FindRecent(ctx context.Context, limit int) ([]*entity.MoodEntry, error)
+	FindRecent(ctx context.Context, limit int, offset int) ([]*entity.MoodEntry, error)
 
 	FindAll(ctx context.Context) ([]*entity.MoodEntry, error)
 

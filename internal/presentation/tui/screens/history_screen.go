@@ -2,6 +2,7 @@ package screens
 
 import (
 	"context"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -15,21 +16,29 @@ import (
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
 
+const historyPageSize = 20
+
 type HistoryScreen struct {
 	state.BaseState
 
+	ctx        context.Context
 	service    *usecase.MoodService
 	translator i18n.Translator
 
-	entries []*entity.MoodEntry
-	cursor  int
+	entries    []*entity.MoodEntry
+	cursor     int
+	page       int
+	hasMore    bool
+	confirmDlg *components.ConfirmationDialog
 }
 
-func NewHistoryScreen(service *usecase.MoodService, translator i18n.Translator) *HistoryScreen {
+func NewHistoryScreen(ctx context.Context, service *usecase.MoodService, translator i18n.Translator) *HistoryScreen {
 	return &HistoryScreen{
+		ctx:        ctx,
 		service:    service,
 		translator: translator,
 		entries:    []*entity.MoodEntry{},
+		page:       0,
 	}
 }
 
@@ -46,6 +55,14 @@ func (s *HistoryScreen) Init() tea.Cmd {
 }
 
 func (s *HistoryScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
+	if s.confirmDlg != nil && !s.confirmDlg.IsDone() {
+		cmd := s.confirmDlg.Update(msg)
+		if s.confirmDlg.IsDone() {
+			s.confirmDlg = nil
+		}
+		return s, cmd
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		s.SetSize(msg.Width, msg.Height)
@@ -53,14 +70,14 @@ func (s *HistoryScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 	case tea.KeyMsg:
 		return s.handleKeyMsg(msg)
 
+	case state.ErrorMsg:
+		s.SetError(msg.Error)
+		return s, nil
+
 	case state.HistoryLoadedMsg:
 		s.entries = msg.Entries
 		s.SetLoading(false)
 		s.ClearError()
-		return s, nil
-
-	case state.ErrorMsg:
-		s.SetError(msg.Error)
 		return s, nil
 
 	case state.MoodDeletedMsg:
@@ -85,21 +102,37 @@ func (s *HistoryScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 		}
 
 	case "enter", "e":
-
 		if len(s.entries) > 0 && s.cursor < len(s.entries) {
 			entry := s.entries[s.cursor]
 			return s, state.NavigateToMoodForm(entry.Date, entry)
 		}
 
 	case "d":
-
 		if len(s.entries) > 0 && s.cursor < len(s.entries) {
 			entry := s.entries[s.cursor]
-			return s, s.deleteMood(entry)
+			msg := fmt.Sprintf(s.t(i18n.EditDeleteWarningKey), formatters.FormatDate(entry.Date))
+			s.confirmDlg = components.NewConfirmation(msg, s.translator, s.deleteMood(entry), nil)
+			return s, nil
+		}
+
+	case "n":
+		if s.hasMore {
+			s.page++
+			s.cursor = 0
+			s.SetLoading(true)
+			return s, s.loadEntries()
+		}
+
+	case "p":
+		if s.page > 0 {
+			s.page--
+			s.cursor = 0
+			s.SetLoading(true)
+			return s, s.loadEntries()
 		}
 
 	case "esc", "q":
-		return s, state.NavigateToMenu()
+		return s, state.NavigateBack()
 	}
 
 	return s, nil
@@ -107,11 +140,19 @@ func (s *HistoryScreen) handleKeyMsg(msg tea.KeyMsg) (state.Screen, tea.Cmd) {
 
 func (s *HistoryScreen) loadEntries() tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-		entries, err := s.service.GetRecentMoods(ctx, 50)
+		limit := historyPageSize + 1
+		offset := s.page * historyPageSize
+
+		entries, err := s.service.GetRecentMoodsWithOffset(s.ctx, limit, offset)
 
 		if err != nil {
 			return state.ErrorMsg{Error: err}
+		}
+
+		s.hasMore = len(entries) > historyPageSize
+
+		if s.hasMore {
+			entries = entries[:historyPageSize]
 		}
 
 		return state.HistoryLoadedMsg{Entries: entries}
@@ -120,8 +161,7 @@ func (s *HistoryScreen) loadEntries() tea.Cmd {
 
 func (s *HistoryScreen) deleteMood(entry *entity.MoodEntry) tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-		err := s.service.DeleteMood(ctx, entry.Date)
+		err := s.service.DeleteMood(s.ctx, entry.Date)
 		if err != nil {
 			return state.ErrorMsg{Error: err}
 		}
@@ -138,6 +178,15 @@ func (s *HistoryScreen) View() string {
 		Width(s.Width)
 
 	header := headerStyle.Render("📜 " + s.t(i18n.HistoryTitleKey))
+
+	if s.confirmDlg != nil {
+		return lipgloss.JoinVertical(
+			lipgloss.Center,
+			header,
+			"",
+			s.confirmDlg.View(),
+		)
+	}
 
 	if s.Loading {
 		loading := components.NewLoading(s.t(i18n.CommonLoaderMessageKey))
@@ -189,6 +238,15 @@ func (s *HistoryScreen) View() string {
 		line := dateStr + " | " + moodStr + " | " + note
 		listContent += itemStyle.Render(line) + "\n"
 	}
+
+	pageInfo := fmt.Sprintf("  %s %d", s.t(i18n.StatsPageKey), s.page+1)
+	if !s.hasMore {
+		pageInfo += " (last)"
+	}
+	pageStyle := lipgloss.NewStyle().
+		Foreground(styles.TextMuted).
+		Padding(0, 2)
+	listContent += pageStyle.Render(pageInfo) + "\n"
 
 	helpStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#9B9B9B")).

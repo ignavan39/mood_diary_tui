@@ -25,9 +25,17 @@ type NavigateMsg struct {
 	Params interface{}
 }
 
+type NavigateBackMsg struct{}
+
 func Navigate(to ScreenType, params interface{}) tea.Cmd {
 	return func() tea.Msg {
 		return NavigateMsg{To: to, Params: params}
+	}
+}
+
+func NavigateBack() tea.Cmd {
+	return func() tea.Msg {
+		return NavigateBackMsg{}
 	}
 }
 
@@ -42,6 +50,10 @@ type CalendarParams struct {
 
 type StatsParams struct {
 	Period string
+}
+
+type LanguageSettingsParams struct {
+	InitialLocale string
 }
 
 type MoodSavedMsg struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/ignavan39/mood-diary/internal/domain/entity"
 	"github.com/ignavan39/mood-diary/internal/infrastructure/i18n"
 	"github.com/ignavan39/mood-diary/internal/presentation/styles"
+	"github.com/ignavan39/mood-diary/internal/presentation/tui/formatters"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/forms"
 	"github.com/ignavan39/mood-diary/internal/presentation/tui/state"
 )
@@ -21,6 +22,7 @@ import (
 type MoodFormScreen struct {
 	state.BaseState
 
+	ctx        context.Context
 	service    *usecase.MoodService
 	translator i18n.Translator
 
@@ -37,12 +39,14 @@ type MoodFormScreen struct {
 }
 
 func NewMoodFormScreen(
+	ctx context.Context,
 	service *usecase.MoodService,
 	translator i18n.Translator,
 	date time.Time,
 	entry *entity.MoodEntry,
 ) *MoodFormScreen {
 	screen := &MoodFormScreen{
+		ctx:        ctx,
 		service:    service,
 		translator: translator,
 		date:       date,
@@ -50,6 +54,7 @@ func NewMoodFormScreen(
 	}
 
 	steps := []forms.Step{
+		NewMoodDateStep(screen),
 		NewMoodLevelStep(screen),
 		NewMoodNoteStep(screen),
 		NewMoodConfirmationStep(screen),
@@ -99,7 +104,7 @@ func (s *MoodFormScreen) Update(msg tea.Msg) (state.Screen, tea.Cmd) {
 	}
 
 	if s.wizard.IsCancelled() {
-		return s, state.Navigate(state.ScreenMenu, nil)
+		return s, state.NavigateBack()
 	}
 
 	return s, cmd
@@ -147,16 +152,7 @@ func (s *MoodFormScreen) View() string {
 
 func (s *MoodFormScreen) save() tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-
-		var err error
-		if s.entry != nil {
-
-			err = s.service.RecordMood(ctx, s.moodLevel, s.note, &s.date)
-		} else {
-
-			err = s.service.RecordMood(ctx, s.moodLevel, s.note, &s.date)
-		}
+		err := s.service.RecordMood(s.ctx, s.moodLevel, s.note, &s.date)
 
 		if err != nil {
 			return state.ErrorMsg{Error: err}
@@ -385,5 +381,72 @@ func (s *MoodConfirmationStep) OnEnter() tea.Cmd {
 }
 
 func (s *MoodConfirmationStep) OnExit() tea.Cmd {
+	return nil
+}
+
+type MoodDateStep struct {
+	screen *MoodFormScreen
+}
+
+func NewMoodDateStep(screen *MoodFormScreen) *MoodDateStep {
+	return &MoodDateStep{
+		screen: screen,
+	}
+}
+
+func (s *MoodDateStep) Render(width, height int) string {
+	var b strings.Builder
+
+	b.WriteString(styles.SubtitleStyle.Render(s.screen.t(i18n.RecordPromptDateKey)))
+	b.WriteString("\n\n")
+
+	dateStr := formatters.FormatDate(s.screen.date)
+	dateStyle := lipgloss.NewStyle().
+		Foreground(styles.PastelLavender).
+		Bold(true).
+		Padding(0, 2)
+
+	label := fmt.Sprintf("📅 %s", dateStr)
+	b.WriteString(dateStyle.Render(label))
+	b.WriteString("\n\n")
+
+	diff := formatters.DaysAgo(s.screen.date)
+	if diff == 0 {
+		b.WriteString(lipgloss.NewStyle().Foreground(styles.TextMuted).Render(s.screen.t(i18n.StatsTodayKey)))
+	} else if diff == 1 {
+		b.WriteString(lipgloss.NewStyle().Foreground(styles.TextMuted).Render(s.screen.t(i18n.StatsYesterdayKey)))
+	} else {
+		b.WriteString(lipgloss.NewStyle().Foreground(styles.TextMuted).Render(
+			s.screen.t(i18n.StatsBeforeDaysKey, diff)))
+	}
+	b.WriteString("\n\n")
+
+	help := styles.HelpStyle.Render(s.screen.t(i18n.HelpNavigationRecordStep0Key))
+	b.WriteString(help)
+
+	return b.String()
+}
+
+func (s *MoodDateStep) Update(msg tea.Msg) (forms.Step, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "left", "h":
+			s.screen.date = s.screen.date.AddDate(0, 0, -1)
+		case "right", "l":
+			s.screen.date = s.screen.date.AddDate(0, 0, 1)
+		}
+	}
+	return s, nil
+}
+
+func (s *MoodDateStep) Validate() error {
+	return nil
+}
+
+func (s *MoodDateStep) OnEnter() tea.Cmd {
+	return nil
+}
+
+func (s *MoodDateStep) OnExit() tea.Cmd {
 	return nil
 }

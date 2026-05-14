@@ -91,25 +91,19 @@ lint:
 		echo "  Установите: https://golangci-lint.run/usage/install/"; \
 	fi
 
+PREFIX ?= $(HOME)/.local
+
 install: build
 	@echo "$(BLUE)Установка приложения...$(NC)"
-	@if [ -w /usr/local/bin ]; then \
-		cp $(BINARY_NAME) /usr/local/bin/; \
-		echo "$(GREEN)✓ Приложение установлено в /usr/local/bin/$(BINARY_NAME)$(NC)"; \
-	else \
-		echo "$(RED)✗ Нет прав на запись в /usr/local/bin$(NC)"; \
-		echo "  Выполните: sudo make install"; \
-	fi
+	@mkdir -p $(PREFIX)/bin
+	cp $(BINARY_NAME) $(PREFIX)/bin/
+	@echo "$(GREEN)✓ Приложение установлено в $(PREFIX)/bin/$(BINARY_NAME)$(NC)"
+	@echo "  Убедитесь, что $$(PREFIX)/bin есть в \$$PATH"
 
 uninstall:
 	@echo "$(BLUE)Удаление приложения...$(NC)"
-	@if [ -w /usr/local/bin ]; then \
-		rm -f /usr/local/bin/$(BINARY_NAME); \
-		echo "$(GREEN)✓ Приложение удалено$(NC)"; \
-	else \
-		echo "$(RED)✗ Нет прав на запись в /usr/local/bin$(NC)"; \
-		echo "  Выполните: sudo make uninstall"; \
-	fi
+	rm -f $(PREFIX)/bin/$(BINARY_NAME)
+	@echo "$(GREEN)✓ Приложение удалено из $(PREFIX)/bin/$(BINARY_NAME)$(NC)"
 
 db-clean:
 	@echo "$(BLUE)Очистка базы данных...$(NC)"

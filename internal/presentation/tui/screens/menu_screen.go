@@ -1,6 +1,7 @@
 package screens
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 type MenuScreen struct {
 	state.BaseState
 
+	ctx        context.Context
 	translator i18n.Translator
 	choices    []menuChoice
 	cursor     int
@@ -30,8 +32,9 @@ type menuChoice struct {
 	icon   string
 }
 
-func NewMenuScreen(translator i18n.Translator) *MenuScreen {
+func NewMenuScreen(ctx context.Context, translator i18n.Translator) *MenuScreen {
 	s := &MenuScreen{
+		ctx:        ctx,
 		translator: translator,
 	}
 
